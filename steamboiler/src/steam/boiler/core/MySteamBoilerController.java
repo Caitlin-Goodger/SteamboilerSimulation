@@ -52,7 +52,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     return mode.toString();
   }
 
-/**
+  /**
  * Process a clock signal which occurs every 5 seconds. This requires reading
  * the set of incoming messages from the physical units and producing a set of
  * output messages which are sent back to them.
@@ -62,23 +62,22 @@ public class MySteamBoilerController implements SteamBoilerController {
  *                 be written here.
  */
   @Override
-    public void clock(Mailbox incoming, Mailbox outgoing) {
-  	// Extract expected messages
-  	Message levelMessage = extractOnlyMatch(MessageKind.LEVEL_v, incoming);
-  	Message steamMessage = extractOnlyMatch(MessageKind.STEAM_v, incoming);
-  	Message[] pumpStateMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
-  	Message[] pumpControlStateMessages = extractAllMatches(MessageKind.PUMP_CONTROL_STATE_n_b, incoming);
-  	//
-  	if (transmissionFailure(levelMessage, steamMessage, pumpStateMessages, pumpControlStateMessages)) {
-  		// Level and steam messages required, so emergency stop.
-  		this.mode = State.EMERGENCY_STOP;
-  	}
-  	//
-  
-  	// FIXME: this is where the main implementation stems from
-  
-  	// NOTE: this is an example message send to illustrate the syntax
-  	outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
+  public void clock(Mailbox incoming, Mailbox outgoing) {
+    // Extract expected messages
+    Message levelMessage = extractOnlyMatch(MessageKind.LEVEL_v, incoming);
+    Message steamMessage = extractOnlyMatch(MessageKind.STEAM_v, incoming);
+    Message[] pumpStateMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
+    Message[] pumpControlStateMessages = 
+        extractAllMatches(MessageKind.PUMP_CONTROL_STATE_n_b, incoming);
+    if (transmissionFailure(levelMessage, steamMessage, 
+        pumpStateMessages, pumpControlStateMessages)) {
+      // Level and steam messages required, so emergency stop.
+      this.mode = State.EMERGENCY_STOP;
+    }
+    // FIXME: this is where the main implementation stems from
+
+    // NOTE: this is an example message send to illustrate the syntax
+    outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
   }
   
   /**
@@ -92,24 +91,25 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param pumpControlStates Extracted PUMP_CONTROL_STATE_n_b messages.
    * @return
    */
-  private boolean transmissionFailure(Message levelMessage, Message steamMessage, Message[] pumpStates,
-  		Message[] pumpControlStates) {
-  	// Check level readings
-  	if (levelMessage == null) {
-  		// Nonsense or missing level reading
-  		return true;
-  	} else if (steamMessage == null) {
-  		// Nonsense or missing steam reading
-  		return true;
-  	} else if (pumpStates.length != configuration.getNumberOfPumps()) {
-  		// Nonsense pump state readings
-  		return true;
-  	} else if (pumpControlStates.length != configuration.getNumberOfPumps()) {
-  		// Nonsense pump control state readings
-  		return true;
-  	}
-  	// Done
-  	return false;
+  private boolean transmissionFailure(Message levelMessage, 
+      Message steamMessage, Message[] pumpStates,
+      Message[] pumpControlStates) {
+    // Check level readings
+    if (levelMessage == null) {
+      // Nonsense or missing level reading
+      return true;
+    } else if (steamMessage == null) {
+      // Nonsense or missing steam reading
+      return true;
+    } else if (pumpStates.length != configuration.getNumberOfPumps()) {
+      // Nonsense pump state readings
+      return true;
+    } else if (pumpControlStates.length != configuration.getNumberOfPumps()) {
+      // Nonsense pump control state readings
+      return true;
+    }
+    // Done
+    return false;
   }
   
   /**
@@ -123,18 +123,18 @@ public class MySteamBoilerController implements SteamBoilerController {
    */
   private static Message extractOnlyMatch(MessageKind kind, Mailbox incoming) {
     Message match = null;
-  	for (int i = 0; i != incoming.size(); ++i) {
-  		Message ith = incoming.read(i);
-  		if (ith.getKind() == kind) {
-  			if (match == null) {
-  				match = ith;
-  			} else {
-  				// This indicates that we matched more than one message of the given kind.
-  				return null;
-  			}
-  		}
-  	}
-  	return match;
+    for (int i = 0; i != incoming.size(); ++i) {
+      Message ith = incoming.read(i);
+      if (ith.getKind() == kind) {
+        if (match == null) {
+          match = ith;
+        } else {
+          // This indicates that we matched more than one message of the given kind.
+          return null;
+        }
+      }
+    }
+    return match;
   }
   
   /**
@@ -145,23 +145,23 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @return The array of matches, which can empty if there were none.
    */
   private static Message[] extractAllMatches(MessageKind kind, Mailbox incoming) {
-  	int count = 0;
-  	// Count the number of matches
-  	for (int i = 0; i != incoming.size(); ++i) {
-  		Message ith = incoming.read(i);
-  		if (ith.getKind() == kind) {
-  			count = count + 1;
-  		}
-  	}
-  	// Now, construct resulting array
-  		Message[] matches = new Message[count];
-  		int index = 0;
-  		for (int i = 0; i != incoming.size(); ++i) {
-  			Message ith = incoming.read(i);
-  			if (ith.getKind() == kind) {
-  				matches[index++] = ith;
-  			}
-  		}
-  		return matches;
-  	}
+    int count = 0;
+    // Count the number of matches
+    for (int i = 0; i != incoming.size(); ++i) {
+      Message ith = incoming.read(i);
+      if (ith.getKind() == kind) {
+        count = count + 1;
+      }
+    }
+    // Now, construct resulting array
+    Message[] matches = new Message[count];
+    int index = 0;
+    for (int i = 0; i != incoming.size(); ++i) {
+      Message ith = incoming.read(i);
+      if (ith.getKind() == kind) {
+        matches[index++] = ith;
+      }
+    }
+    return matches;
   }
+}
