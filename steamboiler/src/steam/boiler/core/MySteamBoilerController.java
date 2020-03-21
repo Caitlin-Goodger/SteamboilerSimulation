@@ -5,17 +5,29 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import steam.boiler.model.SteamBoilerController;
 import steam.boiler.util.Mailbox;
-import steam.boiler.util.SteamBoilerCharacteristics;
 import steam.boiler.util.Mailbox.Message;
 import steam.boiler.util.Mailbox.MessageKind;
+import steam.boiler.util.SteamBoilerCharacteristics;
+
 
 public class MySteamBoilerController implements SteamBoilerController {
-
+  
   /**
   * Captures the various modes in which the controller can operate.
   *
   * @author David J. Pearce
   */
+  
+  private double waterLevel = 0.0;
+  private double previousWaterLevel = 0.0;
+  private double steamLevel = 0.0;
+  private double maxNormalWaterLevel;
+  private double minNormalWaterLevel;
+  private double maxLimitWaterLevel;
+  private double minLimitWaterLevel;
+  private double midLimitWaterLevel;
+  private boolean openValve;
+  
   private enum State {
     WAITING, READY, NORMAL, DEGRADED, RESCUE, EMERGENCY_STOP
   }
@@ -24,6 +36,8 @@ public class MySteamBoilerController implements SteamBoilerController {
    * Records the configuration characteristics for the given boiler problem.
    */
   private final SteamBoilerCharacteristics configuration;
+
+  
 
   /**
  * Identifies the current mode in which the controller is operating.
@@ -37,6 +51,15 @@ public class MySteamBoilerController implements SteamBoilerController {
  */
   public MySteamBoilerController(SteamBoilerCharacteristics configuration) {
     this.configuration = configuration;
+    waterLevel = 0.0;
+    previousWaterLevel = 0.0;
+    steamLevel = 0.0;
+    maxNormalWaterLevel = configuration.getMaximalNormalLevel();
+    minNormalWaterLevel = configuration.getMinimalNormalLevel();
+    maxLimitWaterLevel = configuration.getMaximalLimitLevel();
+    minLimitWaterLevel = configuration.getMinimalLimitLevel();
+    midLimitWaterLevel = minNormalWaterLevel + ((maxNormalWaterLevel - minNormalWaterLevel)/2.0);
+    openValve = false;
   }
 
   /**
@@ -75,9 +98,33 @@ public class MySteamBoilerController implements SteamBoilerController {
       this.mode = State.EMERGENCY_STOP;
     }
     // FIXME: this is where the main implementation stems from
-
+    if (this.mode == State.WAITING) {
+      System.out.println("fjdh");
+      waiting(incoming,outgoing);
+    }
+    
     // NOTE: this is an example message send to illustrate the syntax
-    outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
+    
+    if (mode == State.READY) {
+      System.out.println("fjdh");
+      outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
+    }
+  }
+  
+  /**
+   * Does the waiting operation. 
+   * @param incoming = incoming messages. 
+   * @param outgoing = outgoing messages. 
+   */
+  public void waiting(Mailbox incoming, Mailbox outgoing) {
+    if (waterLevel > maxNormalWaterLevel) {
+      if (!openValve) {
+        outgoing.send(new Message(MessageKind.VALVE));
+        openValve = true;
+      }
+    }
+    outgoing.send(new Message(MessageKind.PROGRAM_READY));
+    mode = State.READY;
   }
   
   /**
