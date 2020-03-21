@@ -33,6 +33,15 @@ public class MySteamBoilerController implements SteamBoilerController {
   private boolean openValve;
   private boolean[] workingPumps;
   private boolean[] openPumps;
+  private boolean waterLevelDeviceFailure;
+  private boolean steamLevelDeviceFailure;
+  private boolean[] pumpFailures;
+  private boolean waterLevelDeviceNeedingRepair;
+  private boolean steamLevelDeviceNeedingRepair;
+  private boolean[] pumpsNeedingRepair;
+  private boolean waterLevelDeviceNeedingAck;
+  private boolean steamLevelDeviceNeedingAck;
+  private boolean[] pumpsNeedingAck;
   
   private enum State {
     WAITING, READY, NORMAL, DEGRADED, RESCUE, EMERGENCY_STOP
@@ -69,6 +78,15 @@ public class MySteamBoilerController implements SteamBoilerController {
     minLimitWaterLevel = configuration.getMinimalLimitLevel();
     midLimitWaterLevel = minNormalWaterLevel + ((maxNormalWaterLevel - minNormalWaterLevel) / 2.0);
     openValve = false;
+    waterLevelDeviceFailure = false;
+    steamLevelDeviceFailure = false;
+    pumpFailures = new boolean[numberOfPumps];
+    waterLevelDeviceNeedingRepair = false;;
+    steamLevelDeviceNeedingRepair = false;
+    pumpsNeedingRepair = new boolean[numberOfPumps];
+    waterLevelDeviceNeedingAck = false;
+    steamLevelDeviceNeedingAck = false;
+    pumpsNeedingAck = new boolean[numberOfPumps];
     openPumps = new boolean[numberOfPumps];
     workingPumps = new boolean[numberOfPumps];
     for (int i = 0; i < numberOfPumps;i++) {
@@ -116,7 +134,9 @@ public class MySteamBoilerController implements SteamBoilerController {
       
     }
     // FIXME: this is where the main implementation stems from
-    if (mode == State.EMERGENCY_STOP) {
+    if (mode == State.DEGRADED) {
+      degrade(incoming, outgoing);
+    } else if (mode == State.EMERGENCY_STOP) {
       emergencyStop(incoming,outgoing);
     } else if (mode == State.NORMAL) {
       normal(incoming,outgoing);
@@ -128,7 +148,9 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     // NOTE: this is an example message send to illustrate the syntax
     
-    if (mode == State.EMERGENCY_STOP) {
+    if (mode == State.DEGRADED) {
+      outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.DEGRADED));
+    } else if (mode == State.EMERGENCY_STOP) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.EMERGENCY_STOP));
     } else if (mode == State.NORMAL) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.NORMAL));
@@ -139,6 +161,29 @@ public class MySteamBoilerController implements SteamBoilerController {
     }
   }
   
+  /**
+   * Degrading Operation. 
+   * @param incoming = incoming messages. 
+   * @param outgoing = outgoing messages. 
+   */
+  public void degrade(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    assert mode == State.DEGRADED;
+    
+    processIncomingMessages(incoming,outgoing);
+  }
+  
+  /**
+   * Process the messages that have come from the parts.
+   * @param incoming = incoming messages;
+   * @param outgoing = outgoing messages;
+   */
+  private void processIncomingMessages(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    
+    
+  }
+
   /**
    * Do Emergency Stop operation. 
    * @param incoming = incoming messages.
