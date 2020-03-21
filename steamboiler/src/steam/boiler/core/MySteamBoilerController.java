@@ -110,18 +110,39 @@ public class MySteamBoilerController implements SteamBoilerController {
         pumpStateMessages, pumpControlStateMessages)) {
       // Level and steam messages required, so emergency stop.
       this.mode = State.EMERGENCY_STOP;
+    } else {
+      waterLevel = extractOnlyMatch(MessageKind.LEVEL_v,incoming).getDoubleParameter();
+      steamLevel = extractOnlyMatch(MessageKind.STEAM_v,incoming).getDoubleParameter();
+      
     }
     // FIXME: this is where the main implementation stems from
-    if (this.mode == State.WAITING) {
+    if (mode == State.NORMAL) {
+      normal(incoming,outgoing);
+    } else if (this.mode == State.WAITING) {
       waiting(incoming,outgoing);
     }
     
     // NOTE: this is an example message send to illustrate the syntax
     
-    if (mode == State.READY) {
-      System.out.println("fkjdslk");
+    if (mode == State.NORMAL) {
+      outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.NORMAL));
+    } else if (mode == State.READY) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
     }
+  }
+  
+  /**
+   * Does the normal operation. 
+   * @param incoming = incoming messages.
+   * @param outgoing = outgoing messages. 
+   */
+  public void normal(Mailbox incoming, Mailbox outgoing) {
+    if (waterLevel > maxNormalWaterLevel) {
+      changeNumberOpenPumps(0,outgoing);
+    } else {
+      changeNumberOpenPumps(predictNumberOfPumpsToOpen(),outgoing);
+    }
+    previousWaterLevel = waterLevel;
   }
   
   /**
