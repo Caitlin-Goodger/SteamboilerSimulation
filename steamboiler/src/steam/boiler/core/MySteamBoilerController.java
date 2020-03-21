@@ -382,7 +382,16 @@ public class MySteamBoilerController implements SteamBoilerController {
       mode = State.EMERGENCY_STOP;
       return;
     } else if (detectedWaterLevelFailure(outgoing) && detectedSteamLevelFailure(outgoing)) {
+      mode = State.EMERGENCY_STOP;
+      return;
+    }
+    
+    if (detectedWaterLevelFailure(outgoing)) {
       
+    } else if (detectedSteamLevelFailure(outgoing) 
+        || detectedControllerFailure(incoming,outgoing) || detectedPumpFailure(incoming, outgoing)){
+      mode = State.DEGRADED;
+      return;
     }
     
     if (waterLevel > maxNormalWaterLevel) {
@@ -394,6 +403,71 @@ public class MySteamBoilerController implements SteamBoilerController {
   }
   
   /**
+   * Detect if there is a pump failure.
+   * @param incoming = incoming messages.
+   * @param outgoing = outgoing messages.
+   * @return
+   */
+  private boolean detectedPumpFailure(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    Mailbox.Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
+
+    for (int i = 0; i < numberOfPumps; i++) {
+      if (workingPumps[i]) {
+        if (openPumps[i] != pumpMessages[i].getBooleanParameter()) {
+          if (openPumps[i]) {
+            openPumps[i] = false;
+          } else {
+            openPumps[i] = true;
+          }
+          workingPumps[i] = false;
+          pumpsNeedingAck[i] = true;
+          outgoing.send(new Message(MessageKind.PUMP_FAILURE_DETECTION_n,i));
+          return true;
+        }
+      }
+      
+      if (countTrueValues(pumpsNeedingAck) > 0) {
+        return true;
+      } else if (countTrueValues(pumpsNeedingRepair) > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Detect if there is a controller failure.
+   * @param incoming = incoming messages.
+   * @param outgoing = outgoing messages. 
+   * @return
+   */
+  private boolean detectedControllerFailure(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    Mailbox.Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
+    Mailbox.Message[] pumpControllerMessages = 
+        extractAllMatches(MessageKind.PUMP_CONTROL_STATE_n_b, incoming);
+    
+    for (int i = 0; i < numberOfPumps; i++) {
+      if (openPumps[i] == pumpMessages[i].getBooleanParameter()) {
+        if (openPumps[i] == pumpControllerMessages[i].getBooleanParameter()) {
+          workingPumpControllers[i] = false;
+          pumpControllersNeedingAck[i] = true;
+          outgoing.send(new Message(MessageKind.PUMP_CONTROL_FAILURE_DETECTION_n,i));
+          return true;
+        }
+      }
+      
+      if (countTrueValues(pumpControllersNeedingAck) > 0) {
+        return true;
+      } else if (countTrueValues(pumpControllersNeedingRepair) > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Check that if the stream device has failed.
    * @param outgoing = outgoing messages. 
    * @return
@@ -402,7 +476,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     assert outgoing != null;
     
     if (steamLevel > maxSteamLevel || steamLevel <= 0) {
-      outgoing.send((new Message(MessageKind.STEAM_FAILURE_DETECTION));
+      outgoing.send(new Message(MessageKind.STEAM_FAILURE_DETECTION));
       steamLevelDeviceFailure = true;
       steamLevelDeviceNeedingAck = true;
       return true;
