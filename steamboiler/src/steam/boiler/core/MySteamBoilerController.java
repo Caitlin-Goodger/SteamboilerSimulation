@@ -387,7 +387,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     }
     
     if (detectedWaterLevelFailure(outgoing)) {
-      
+      //ADD RESUE HERE
     } else if (detectedSteamLevelFailure(outgoing) 
         || detectedControllerFailure(incoming,outgoing) || detectedPumpFailure(incoming, outgoing)){
       mode = State.DEGRADED;
@@ -522,6 +522,14 @@ public class MySteamBoilerController implements SteamBoilerController {
     if (extractOnlyMatch(MessageKind.STEAM_BOILER_WAITING,incoming) == null) {
       return;
     }
+    
+    if (waterLevel < 0 || waterLevel > waterCapacity 
+        || steamLevel != 0 || detectedWaterLevelFailure(outgoing)) {
+      mode = State.EMERGENCY_STOP;
+      return;
+    }
+    
+    
     
     if (waterLevel > maxNormalWaterLevel) {
       if (!openValve) {
