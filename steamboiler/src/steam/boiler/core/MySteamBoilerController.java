@@ -19,7 +19,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   */
   
   private int cycle = 5;
-  private double numberOfPumps;
+  private int numberOfPumps;
   private double pumpCapacity;
   private double waterLevel;
   private double previousWaterLevel;
@@ -31,6 +31,8 @@ public class MySteamBoilerController implements SteamBoilerController {
   private double minLimitWaterLevel;
   private double midLimitWaterLevel;
   private boolean openValve;
+  private boolean[] workingPumps;
+  private boolean[] openPumps;
   
   private enum State {
     WAITING, READY, NORMAL, DEGRADED, RESCUE, EMERGENCY_STOP
@@ -67,6 +69,11 @@ public class MySteamBoilerController implements SteamBoilerController {
     minLimitWaterLevel = configuration.getMinimalLimitLevel();
     midLimitWaterLevel = minNormalWaterLevel + ((maxNormalWaterLevel - minNormalWaterLevel)/2.0);
     openValve = false;
+    openPumps = new boolean[numberOfPumps];
+    workingPumps = new boolean[numberOfPumps];
+    for (int i = 0; i < numberOfPumps;i++) {
+      workingPumps[i] = true;
+    }
   }
 
   /**
@@ -154,6 +161,27 @@ public class MySteamBoilerController implements SteamBoilerController {
       
     }
     return numberToOpen;
+  }
+  
+  
+  private void changeNumberOpenPumps(int numberPumpsToOpen, Mailbox outgoing) {
+    int counter = 0;
+    for (int i = 0; i < numberOfPumps; i++) {
+      if (counter < numberPumpsToOpen) {
+        if (openPumps[i]) {
+          counter++;
+        } else if (pumpsWorking[i]) {
+          outgoing.send(new Message(MessageKind.OPEN_PUMP_n,i));
+          openPumps[i] = true;
+          counter++;
+        }
+      } else {
+        if (openPumps[i]) {
+          outoging.send(newMessage(MessageKind.CLOSE_PUMP_n,i));
+          openPumps[i] = false;
+        }
+      }
+    }
   }
   
   /**
