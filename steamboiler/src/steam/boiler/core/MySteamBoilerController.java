@@ -225,7 +225,25 @@ public class MySteamBoilerController implements SteamBoilerController {
     processIncomingMessages(incoming,outgoing);
     doRepairs(incoming,outgoing);
     
+    if (detectedWaterLevelFailure(outgoing)) {
+      if (detectedSteamLevelFailure(outgoing)) {
+        mode = State.EMERGENCY_STOP;
+        return;
+      }
+      mode = State.RESCUE;
+      return;
+    }
     
+    if (!waterLevelInLimits()) {
+      mode = State.EMERGENCY_STOP;
+      return;
+    }
+    
+    if (!detectedSteamLevelFailure(outgoing) && !detectedPumpFailure(incoming,outgoing) 
+        && !detectedControllerFailure(incoming,outgoing)) {
+      mode = State.NORMAL;
+      return;
+    }
     
     if (waterLevel < midLimitWaterLevel) {
       changeNumberOpenPumps(getNumberOfOpenPumps() + 1,outgoing);
