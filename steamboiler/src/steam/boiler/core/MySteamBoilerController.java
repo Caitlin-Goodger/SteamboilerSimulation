@@ -177,7 +177,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   }
   
   /**
-   * Reescue operation.
+   * Rescue operation.
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages. 
    */
@@ -194,7 +194,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     } else {
       mode = State.NORMAL;
     }
-    
+    System.out.println(mode);
     if (previousWaterLevel < midLimitWaterLevel) {
       changeNumberOpenPumps(getNumberOfOpenPumps() + 1, outgoing);
     } else {
@@ -448,7 +448,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     }
     
     if (detectedWaterLevelFailure(outgoing)) {
-      //ADD RESUE HERE
+      mode = State.RESCUE;
     } else if (detectedSteamLevelFailure(outgoing) || detectedControllerFailure(incoming,outgoing) 
         || detectedPumpFailure(incoming, outgoing)) {
       mode = State.DEGRADED;
@@ -475,7 +475,7 @@ public class MySteamBoilerController implements SteamBoilerController {
 
     for (int i = 0; i < numberOfPumps; i++) {
       if (workingPumps[i]) {
-        if (openPumps[i] != pumpMessages[i].getBooleanParameter()) {
+        if (openPumps[i] ^ pumpMessages[i].getBooleanParameter()) {
           if (openPumps[i]) {
             openPumps[i] = false;
           } else {
@@ -511,7 +511,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     for (int i = 0; i < numberOfPumps; i++) {
       if (openPumps[i] == pumpMessages[i].getBooleanParameter()) {
-        if (openPumps[i] == pumpControllerMessages[i].getBooleanParameter()) {
+        if (openPumps[i] != pumpControllerMessages[i].getBooleanParameter()) {
           workingPumpControllers[i] = false;
           pumpControllersNeedingAck[i] = true;
           outgoing.send(new Message(MessageKind.PUMP_CONTROL_FAILURE_DETECTION_n,i));
