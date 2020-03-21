@@ -173,8 +173,50 @@ public class MySteamBoilerController implements SteamBoilerController {
    */
   private boolean[] pumpControllersNeedingAck;
   
+  /**
+   * List of the states that the controller can be in. 
+   * @author Caitlin
+   *
+   */
   private enum State {
-    WAITING, READY, NORMAL, DEGRADED, RESCUE, EMERGENCY_STOP
+    /** 
+     * Waiting State. State when the program starts
+     * Checks that the water and steam levels are correct
+     * Can move into Ready or Emergency_stop states
+     */
+    WAITING, 
+    /**
+     * Ready State. State where the program is ready to start.
+     * Checks that all the parts of the boiler are ready to start
+     * Can move into Normal once all the parts are read. 
+     */
+    READY, 
+    /**
+     * Normal State. State where the program is running normally.
+     * Turns the pumps on and off to keep the water within the right limits
+     * Can move into Degraded, rescue or Emergency_Stop if there are any problems
+     */
+    NORMAL, 
+    /**
+     * Degraded State. State where it tries to maintain water levels, 
+     * even though there is an issue with a physical unit.
+     * Can move into normal, if the issue is repaired
+     * Can move into Rescue or Emergency stop if there are more issues.
+     */
+    DEGRADED, 
+    
+    /**
+     * Rescue State. State where it tries to maintain water levels,
+     * even though the water level device has failed.
+     * Can move into normal, if the issue is fixed.
+     * Can move into degraded. if there are other issues
+     */
+    RESCUE, 
+    
+    /**
+     * Emergency Stop. State to stop if there is major issues.
+     */
+    EMERGENCY_STOP
   }
 
   /**
