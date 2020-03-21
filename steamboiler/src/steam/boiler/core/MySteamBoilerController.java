@@ -145,7 +145,9 @@ public class MySteamBoilerController implements SteamBoilerController {
       
     }
     // FIXME: this is where the main implementation stems from
-    if (mode == State.DEGRADED) {
+    if (mode == State.RESCUE) {
+      rescue(incoming,outgoing);
+    } else if (mode == State.DEGRADED) {
       degrade(incoming, outgoing);
     } else if (mode == State.EMERGENCY_STOP) {
       emergencyStop(incoming,outgoing);
@@ -159,7 +161,9 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     // NOTE: this is an example message send to illustrate the syntax
     
-    if (mode == State.DEGRADED) {
+    if (mode == State.RESCUE) {
+      outgoing.send(new Message(MessageKind.MODE_m,Mailbox.Mode.RESCUE));
+    } else if (mode == State.DEGRADED) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.DEGRADED));
     } else if (mode == State.EMERGENCY_STOP) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.EMERGENCY_STOP));
@@ -173,6 +177,43 @@ public class MySteamBoilerController implements SteamBoilerController {
   }
   
   /**
+   * Reescue operation.
+   * @param incoming = incoming messages.
+   * @param outgoing = outgoing messages. 
+   */
+  private void rescue(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    assert mode == State.RESCUE;
+    
+    processIncomingMessages(incoming,outgoing);
+    doRepairs(incoming,outgoing);
+    
+    if (detectedPumpFailure(incoming,outgoing) || detectedControllerFailure(incoming, outgoing) 
+        || detectedSteamLevelFailure(outgoing)) {
+      mode = State.DEGRADED;
+    } else {
+      mode = State.NORMAL;
+    }
+    
+    if (previousWaterLevel < midLimitWaterLevel) {
+      changeNumberOpenPumps(getNumberOfOpenPumps() + 1, outgoing);
+    } else {
+      int toOpen = getNumberOfOpenPumps() - 1;
+      if (toOpen < 0) {
+        toOpen = 0;
+      }
+      changeNumberOpenPumps(toOpen,outgoing);
+    }
+    
+    double waterIn = (cycle * pumpCapacity * getNumberOfOpenPumps());
+    double maxWaterLevel = waterLevel + waterIn - (cycle * steamLevel);
+    double minWaterLevel = waterLevel + waterIn - (cycle * maxSteamLevel);
+    double prediction = minWaterLevel + (Math.abs(maxWaterLevel - minWaterLevel) / 2.0);
+    
+    
+  }
+
+  /**
    * Degrading Operation. 
    * @param incoming = incoming messages. 
    * @param outgoing = outgoing messages. 
@@ -183,6 +224,8 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     processIncomingMessages(incoming,outgoing);
     doRepairs(incoming,outgoing);
+    
+    
     
     if (waterLevel < midLimitWaterLevel) {
       changeNumberOpenPumps(getNumberOfOpenPumps() + 1,outgoing);
@@ -388,8 +431,8 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     if (detectedWaterLevelFailure(outgoing)) {
       //ADD RESUE HERE
-    } else if (detectedSteamLevelFailure(outgoing) 
-        || detectedControllerFailure(incoming,outgoing) || detectedPumpFailure(incoming, outgoing)){
+    } else if (detectedSteamLevelFailure(outgoing) || detectedControllerFailure(incoming,outgoing) 
+        || detectedPumpFailure(incoming, outgoing)) {
       mode = State.DEGRADED;
       return;
     }
