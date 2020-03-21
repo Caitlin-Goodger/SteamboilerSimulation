@@ -67,7 +67,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     minNormalWaterLevel = configuration.getMinimalNormalLevel();
     maxLimitWaterLevel = configuration.getMaximalLimitLevel();
     minLimitWaterLevel = configuration.getMinimalLimitLevel();
-    midLimitWaterLevel = minNormalWaterLevel + ((maxNormalWaterLevel - minNormalWaterLevel)/2.0);
+    midLimitWaterLevel = minNormalWaterLevel + ((maxNormalWaterLevel - minNormalWaterLevel) / 2.0);
     openValve = false;
     openPumps = new boolean[numberOfPumps];
     workingPumps = new boolean[numberOfPumps];
@@ -141,6 +141,8 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param outgoing = incoming messages. 
    */
   public void ready(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    assert mode == State.READY;
     if (extractOnlyMatch(MessageKind.PHYSICAL_UNITS_READY,incoming) != null) {
       mode = State.NORMAL;
     } else {
@@ -154,6 +156,8 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param outgoing = outgoing messages. 
    */
   public void normal(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    assert mode == State.NORMAL;
     if (waterLevel > maxNormalWaterLevel) {
       changeNumberOpenPumps(0,outgoing);
     } else {
@@ -168,6 +172,8 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param outgoing = outgoing messages. 
    */
   public void waiting(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    assert mode == State.WAITING;
     if (extractOnlyMatch(MessageKind.STEAM_BOILER_WAITING,incoming) == null) {
       return;
     }
