@@ -127,6 +127,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     // NOTE: this is an example message send to illustrate the syntax
     
     if (mode == State.NORMAL) {
+      outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.NORMAL));
     } else if (mode == State.READY) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
     }  else if (mode == State.WAITING) {
@@ -194,7 +195,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   private int predictNumberOfPumpsToOpen() {
     int numberToOpen = 0;
     double closestToNormal = Double.MAX_VALUE;
-    for (int i = 0;i < numberOfPumps;i++) {
+    for (int i = 0;i <= numberOfPumps;i++) {
       double waterIn = (cycle * pumpCapacity * i);
       double maxWaterLevel = waterLevel + waterIn - (cycle * steamLevel);
       double minWaterLevel = waterLevel + waterIn - (cycle * maxSteamLevel);
