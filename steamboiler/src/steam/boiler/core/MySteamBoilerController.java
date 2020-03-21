@@ -22,6 +22,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   private int numberOfPumps;
   private double pumpCapacity;
   private double waterLevel;
+  private double waterCapacity;
   private double previousWaterLevel;
   private double steamLevel;
   private double maxSteamLevel;
@@ -73,6 +74,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     numberOfPumps = configuration.getNumberOfPumps();
     pumpCapacity = configuration.getPumpCapacity(0);
     waterLevel = 0.0;
+    waterCapacity = configuration.getCapacity();
     previousWaterLevel = 0.0;
     steamLevel = 0.0;
     maxSteamLevel = configuration.getMaximualSteamRate();
@@ -189,7 +191,7 @@ public class MySteamBoilerController implements SteamBoilerController {
       if (toOpen < 0) {
         toOpen = 0;
       }
-      changeNumberOpenPUmps(toOpen,outgoing);
+      changeNumberOpenPumps(toOpen,outgoing);
     }
     
     previousWaterLevel = waterLevel;
@@ -375,6 +377,14 @@ public class MySteamBoilerController implements SteamBoilerController {
   public void normal(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     assert mode == State.NORMAL;
+    
+    if (!detectedWaterLevelFailure(outgoing) && !waterLevelInLimits()) {
+      mode = State.EMERGENCY_STOP;
+      return;
+    } else if (detectedWaterLevelFailure(outgoing) && detectedSteamLevelFailure(outgoing)) {
+      
+    }
+    
     if (waterLevel > maxNormalWaterLevel) {
       changeNumberOpenPumps(0,outgoing);
     } else {
@@ -383,6 +393,50 @@ public class MySteamBoilerController implements SteamBoilerController {
     previousWaterLevel = waterLevel;
   }
   
+  /**
+   * Check that if the stream device has failed.
+   * @param outgoing = outgoing messages. 
+   * @return
+   */
+  private boolean detectedSteamLevelFailure(Mailbox outgoing) {
+    assert outgoing != null;
+    
+    if (steamLevel > maxSteamLevel || steamLevel <= 0) {
+      outgoing.send((new Message(MessageKind.STEAM_FAILURE_DETECTION));
+      steamLevelDeviceFailure = true;
+      steamLevelDeviceNeedingAck = true;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Check if the water level is within the limits.
+   * @return
+   */
+  private boolean waterLevelInLimits() {
+    if (waterLevel > minLimitWaterLevel && waterLevel < maxLimitWaterLevel) {
+      return true; 
+    }
+    return false;
+  }
+
+  /**
+   * Check if the water level device has found a failure.
+   * @param outgoing = outgoing messages.
+   * @return
+   */
+  private boolean detectedWaterLevelFailure(Mailbox outgoing) {
+    assert outgoing != null;
+    if (waterLevel < 0 || waterLevel >= waterCapacity) {
+      outgoing.send(new Message(MessageKind.LEVEL_FAILURE_DETECTION));
+      waterLevelDeviceFailure = true;
+      waterLevelDeviceNeedingAck = true;
+      return true;
+    }
+    return false;
+  }
+
   /**
    * Does the waiting operation. 
    * @param incoming = incoming messages. 
