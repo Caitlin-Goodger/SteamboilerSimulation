@@ -180,8 +180,60 @@ public class MySteamBoilerController implements SteamBoilerController {
     assert mode == State.DEGRADED;
     
     processIncomingMessages(incoming,outgoing);
+    doRepairs(incoming,outgoing);
   }
   
+  /**
+   * Do repairs for the physical units. 
+   * @param incoming = incoming.
+   * @param outgoing = outgoing. 
+   */
+  private void doRepairs(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    
+    if (waterLevelDeviceFailure && waterLevelDeviceNeedingRepair) {
+      if (extractOnlyMatch(MessageKind.LEVEL_REPAIRED, incoming) != null) {
+        waterLevelDeviceNeedingRepair = false;
+        waterLevelDeviceFailure = false;
+        outgoing.send(new Message(MessageKind.LEVEL_REPAIRED_ACKNOWLEDGEMENT));
+      }
+    }
+    
+    if (steamLevelDeviceFailure && steamLevelDeviceNeedingRepair) {
+      if (extractOnlyMatch(MessageKind.STEAM_REPAIRED, incoming) != null) {
+        steamLevelDeviceNeedingRepair = false;
+        steamLevelDeviceFailure = false;
+        outgoing.send(new Message(MessageKind.STEAM_REPAIRED_ACKNOWLEDGEMENT));
+      }
+    }
+    
+    if (countTrueValues(workingPumps) < numberOfPumps && countTrueValues(pumpsNeedingRepair) > 0) {
+      Mailbox.Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_REPAIRED_n,incoming);
+      
+      for (int i = 0; i < pumpMessages.length; i++) {
+        pumpsNeedingRepair[pumpMessages[i].getIntegerParameter()] = false;
+        workingPumps[pumpMessages[i].getIntegerParameter()] = true;
+        outgoing.send(new Message(
+            MessageKind.PUMP_REPAIRED_ACKNOWLEDGEMENT_n,pumpMessages[i].getIntegerParameter()));
+        
+      }
+    }
+    
+    if (countTrueValues(workingPumpControllers) < numberOfPumps 
+        && countTrueValues(pumpControllersNeedingRepair) > 0) {
+      Mailbox.Message[] pumpControllersMessages = 
+          extractAllMatches(MessageKind.PUMP_CONTROL_REPAIRED_n,incoming);
+      
+      for (int i = 0; i < pumpControllersMessages.length; i++) {
+        pumpControllersNeedingRepair[pumpControllersMessages[i].getIntegerParameter()] = false;
+        workingPumpControllers[pumpControllersMessages[i].getIntegerParameter()] = true;
+        outgoing.send(new Message(MessageKind.PUMP_CONTROL_REPAIRED_ACKNOWLEDGEMENT_n,
+            pumpControllersMessages[i].getIntegerParameter()));
+        
+      }
+    }
+  }
+
   /**
    * Process the messages that have come from the parts.
    * @param incoming = incoming messages;
