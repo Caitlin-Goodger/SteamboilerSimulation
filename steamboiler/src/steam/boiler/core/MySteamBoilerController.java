@@ -118,6 +118,8 @@ public class MySteamBoilerController implements SteamBoilerController {
     // FIXME: this is where the main implementation stems from
     if (mode == State.NORMAL) {
       normal(incoming,outgoing);
+    } else if (mode == State.READY) {
+      ready(incoming,outgoing);
     } else if (this.mode == State.WAITING) {
       waiting(incoming,outgoing);
     }
@@ -125,11 +127,23 @@ public class MySteamBoilerController implements SteamBoilerController {
     // NOTE: this is an example message send to illustrate the syntax
     
     if (mode == State.NORMAL) {
-      outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.NORMAL));
     } else if (mode == State.READY) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
     }  else if (mode == State.WAITING) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
+    }
+  }
+  
+  /**
+   * Do ready operation.
+   * @param incoming = incoming messages.
+   * @param outgoing = incoming messages. 
+   */
+  public void ready(Mailbox incoming, Mailbox outgoing) {
+    if (extractOnlyMatch(MessageKind.PHYSICAL_UNITS_READY,incoming) != null) {
+      mode = State.NORMAL;
+    } else {
+      outgoing.send(new Message(MessageKind.PROGRAM_READY));
     }
   }
   
