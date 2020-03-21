@@ -181,8 +181,36 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     processIncomingMessages(incoming,outgoing);
     doRepairs(incoming,outgoing);
+    
+    if (waterLevel < midLimitWaterLevel) {
+      changeNumberOpenPumps(getNumberOfOpenPumps() + 1,outgoing);
+    } else {
+      int toOpen = getNumberOfOpenPumps() - 1;
+      if (toOpen < 0) {
+        toOpen = 0;
+      }
+      changeNumberOpenPUmps(toOpen,outgoing);
+    }
+    
+    previousWaterLevel = waterLevel;
   }
   
+  /**
+   * Get the number of pumps that are open.
+   * @return
+   */
+  private int getNumberOfOpenPumps() {
+    int count = 0;
+    
+    for (int i = 0; i < numberOfPumps; i++) {
+      if (openPumps[i]) {
+        count++;
+      }
+    }
+    
+    return count++;
+  }
+
   /**
    * Do repairs for the physical units. 
    * @param incoming = incoming.
