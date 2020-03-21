@@ -32,16 +32,20 @@ public class MySteamBoilerController implements SteamBoilerController {
   private double midLimitWaterLevel;
   private boolean openValve;
   private boolean[] workingPumps;
+  private boolean[] workingPumpControllers;
   private boolean[] openPumps;
   private boolean waterLevelDeviceFailure;
   private boolean steamLevelDeviceFailure;
   private boolean[] pumpFailures;
+  private boolean[] pumpControllersFailures;
   private boolean waterLevelDeviceNeedingRepair;
   private boolean steamLevelDeviceNeedingRepair;
   private boolean[] pumpsNeedingRepair;
+  private boolean[] pumpControllersNeedingRepair;
   private boolean waterLevelDeviceNeedingAck;
   private boolean steamLevelDeviceNeedingAck;
   private boolean[] pumpsNeedingAck;
+  private boolean[] pumpControllersNeedingAck;
   
   private enum State {
     WAITING, READY, NORMAL, DEGRADED, RESCUE, EMERGENCY_STOP
@@ -81,16 +85,21 @@ public class MySteamBoilerController implements SteamBoilerController {
     waterLevelDeviceFailure = false;
     steamLevelDeviceFailure = false;
     pumpFailures = new boolean[numberOfPumps];
+    pumpControllersFailures = new boolean[numberOfPumps];
     waterLevelDeviceNeedingRepair = false;;
     steamLevelDeviceNeedingRepair = false;
     pumpsNeedingRepair = new boolean[numberOfPumps];
+    pumpControllersNeedingRepair = new boolean[numberOfPumps];
     waterLevelDeviceNeedingAck = false;
     steamLevelDeviceNeedingAck = false;
     pumpsNeedingAck = new boolean[numberOfPumps];
+    pumpControllersNeedingAck = new boolean[numberOfPumps];
     openPumps = new boolean[numberOfPumps];
     workingPumps = new boolean[numberOfPumps];
+    workingPumpControllers = new boolean[numberOfPumps];
     for (int i = 0; i < numberOfPumps;i++) {
       workingPumps[i] = true;
+      workingPumpControllers[i] = true;
     }
   }
 
@@ -181,7 +190,69 @@ public class MySteamBoilerController implements SteamBoilerController {
   private void processIncomingMessages(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     
+    if (waterLevelDeviceFailure && waterLevelDeviceNeedingAck) {
+      if (extractOnlyMatch(MessageKind.LEVEL_FAILURE_ACKNOWLEDGEMENT,incoming) != null) {
+        waterLevelDeviceNeedingAck = false;
+        waterLevelDeviceNeedingRepair = true;
+      } else {
+        outgoing.send(new Message(MessageKind.LEVEL_FAILURE_DETECTION));
+      }
+    }
     
+    if (steamLevelDeviceFailure && steamLevelDeviceNeedingAck) {
+      if (extractOnlyMatch(MessageKind.STEAM_OUTCOME_FAILURE_ACKNOWLEDGEMENT,incoming) != null) {
+        steamLevelDeviceNeedingAck = false;
+        steamLevelDeviceNeedingRepair = true;
+      } else {
+        outgoing.send(new Message(MessageKind.STEAM_FAILURE_DETECTION));
+      }
+    }
+    
+    //If there is at least one pump that has failed
+    if (countTrueValues(workingPumps) < numberOfPumps) {
+      Mailbox.Message[] pumpMessages = 
+          extractAllMatches(MessageKind.PUMP_FAILURE_ACKNOWLEDGEMENT_n,incoming);
+      if (pumpMessages.length > 0) {
+        for (int i = 0; i < pumpMessages.length; i++) {
+          pumpsNeedingAck[pumpMessages[i].getIntegerParameter()] = false;
+          pumpsNeedingRepair[pumpMessages[i].getIntegerParameter()] = true;
+        }
+      } else {
+        for (int i = 0; i < numberOfPumps; i++) {
+          if (!workingPumps[i] && pumpsNeedingAck[i]) {
+            outgoing.send(new Message(MessageKind.PUMP_FAILURE_DETECTION_n,i));
+          }
+        }
+      }
+    }
+    
+    if (countTrueValues(workingPumpControllers) < numberOfPumps) {
+      Mailbox.Message[] pumpControllerMessages = 
+          extractAllMatches(MessageKind.PUMP_CONTROL_FAILURE_ACKNOWLEDGEMENT_n,incoming);
+      if (pumpControllerMessages.length > 0) {
+        for (int i = 0; i < pumpControllerMessages.length; i++) {
+          pumpControllersNeedingAck[pumpControllerMessages[i].getIntegerParameter()] = false;
+          pumpControllersNeedingRepair[pumpControllerMessages[i].getIntegerParameter()] = true;
+        }
+      } else {
+        for (int i = 0; i < numberOfPumps; i++) {
+          if (!workingPumpControllers[i] && pumpControllersNeedingAck[i]) {
+            outgoing.send(new Message(MessageKind.PUMP_CONTROL_FAILURE_DETECTION_n,i));
+          }
+        }
+      }
+    }
+  }
+  
+  private int countTrueValues(boolean[] list) {
+    assert list != null;
+    int count = 0;
+    for (int i = 0; i < list.length; i++) {
+      if (list[i]) {
+        count++;
+      }
+    }
+    return count;
   }
 
   /**
