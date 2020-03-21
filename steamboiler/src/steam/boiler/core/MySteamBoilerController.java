@@ -116,7 +116,9 @@ public class MySteamBoilerController implements SteamBoilerController {
       
     }
     // FIXME: this is where the main implementation stems from
-    if (mode == State.NORMAL) {
+    if (mode == State.EMERGENCY_STOP) {
+      emergencyStop(incoming,outgoing);
+    } else if (mode == State.NORMAL) {
       normal(incoming,outgoing);
     } else if (mode == State.READY) {
       ready(incoming,outgoing);
@@ -126,12 +128,31 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     // NOTE: this is an example message send to illustrate the syntax
     
-    if (mode == State.NORMAL) {
+    if (mode == State.EMERGENCY_STOP) {
+      outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.EMERGENCY_STOP));
+    } else if (mode == State.NORMAL) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.NORMAL));
     } else if (mode == State.READY) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
     }  else if (mode == State.WAITING) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
+    }
+  }
+  
+  /**
+   * Do Emergency Stop operation. 
+   * @param incoming = incoming messages.
+   * @param outgoing = outgoing messages. 
+   */
+  public void emergencyStop(Mailbox incoming, Mailbox outgoing) {
+    assert incoming != null && outgoing != null;
+    assert mode == State.EMERGENCY_STOP;
+    
+    changeNumberOpenPumps(0,outgoing);
+    
+    if (!openValve) {
+      outgoing.send(new Message(MessageKind.VALVE));
+      openValve = true;
     }
   }
   
