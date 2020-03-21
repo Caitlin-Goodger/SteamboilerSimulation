@@ -113,14 +113,13 @@ public class MySteamBoilerController implements SteamBoilerController {
     }
     // FIXME: this is where the main implementation stems from
     if (this.mode == State.WAITING) {
-      System.out.println("fjdh");
       waiting(incoming,outgoing);
     }
     
     // NOTE: this is an example message send to illustrate the syntax
     
     if (mode == State.READY) {
-      System.out.println("fjdh");
+      System.out.println("fkjdslk");
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
     }
   }
@@ -131,17 +130,28 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param outgoing = outgoing messages. 
    */
   public void waiting(Mailbox incoming, Mailbox outgoing) {
+    if (extractOnlyMatch(MessageKind.STEAM_BOILER_WAITING,incoming) == null) {
+      return;
+    }
+    
     if (waterLevel > maxNormalWaterLevel) {
       if (!openValve) {
         outgoing.send(new Message(MessageKind.VALVE));
         openValve = true;
       }
     } else if (waterLevel < minNormalWaterLevel) {
+      changeNumberOpenPumps(predictNumberOfPumpsToOpen(),outgoing);
       
+      if (openValve) {
+        outgoing.send(new Message(MessageKind.VALVE));
+        openValve = false;
+      }
+    } else {
+      changeNumberOpenPumps(0,outgoing);
+      outgoing.send(new Message(MessageKind.PROGRAM_READY));
+      mode = State.READY;
     }
-    
-    outgoing.send(new Message(MessageKind.PROGRAM_READY));
-    mode = State.READY;
+    previousWaterLevel = waterLevel; 
   }
   
   private int predictNumberOfPumpsToOpen() {
@@ -170,14 +180,14 @@ public class MySteamBoilerController implements SteamBoilerController {
       if (counter < numberPumpsToOpen) {
         if (openPumps[i]) {
           counter++;
-        } else if (pumpsWorking[i]) {
+        } else if (workingPumps[i]) {
           outgoing.send(new Message(MessageKind.OPEN_PUMP_n,i));
           openPumps[i] = true;
           counter++;
         }
       } else {
         if (openPumps[i]) {
-          outoging.send(newMessage(MessageKind.CLOSE_PUMP_n,i));
+          outgoing.send(new Message(MessageKind.CLOSE_PUMP_n,i));
           openPumps[i] = false;
         }
       }
