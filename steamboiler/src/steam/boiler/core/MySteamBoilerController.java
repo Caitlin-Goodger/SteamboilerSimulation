@@ -10,6 +10,11 @@ import steam.boiler.util.Mailbox.MessageKind;
 import steam.boiler.util.SteamBoilerCharacteristics;
 
 
+/**
+ * Controller for the steam boiler. 
+ * @author Caitlin
+ *
+ */
 public class MySteamBoilerController implements SteamBoilerController {
   
   /**
@@ -18,34 +23,154 @@ public class MySteamBoilerController implements SteamBoilerController {
   * @author David J. Pearce
   */
   
+  /**
+   * The length of the cycle which is five seconds. 
+   */
   private int cycle = 5;
+  
+  /**
+   * Number of pumps in the steam boiler. 
+   */
   private int numberOfPumps;
+  
+  /**
+   * The capacity of the pumps in the steam boiler.
+   */
   private double pumpCapacity;
+  
+  /**
+   * The current water level in the boiler. 
+   */
   private double waterLevel;
+  
+  /**
+   * THe maximum water capacity of the boiler.
+   */
   private double waterCapacity;
+  
+  /**
+   * The water level the previous cycle. 
+   */
   private double previousWaterLevel;
+  
+  /**
+   * The current steam level in the boiler. 
+   */
   private double steamLevel;
+  
+  /**
+   * The maximum steam level that there can be.
+   */
   private double maxSteamLevel;
+  
+  /**
+   * The maximum water level to still be in the normal section. 
+   */
   private double maxNormalWaterLevel;
+  
+  /**
+   * The minimum water level to still be in the normal section. 
+   */
   private double minNormalWaterLevel;
+  
+  /**
+   * The maximum limit for the water level. 
+   */
   private double maxLimitWaterLevel;
+  
+  /**
+   * The minimum limit for the water level.
+   */
   private double minLimitWaterLevel;
+  
+  /**
+   * The mid point of the water level. The ideal place to be. 
+   */
   private double midLimitWaterLevel;
+  
+  /**
+   * Boolean for if the valve if open. 
+   */
   private boolean openValve;
+  
+  /**
+   * Boolean array of the working pumps. 
+   * True for a pump that works and false for a pump that doen't. 
+   */
   private boolean[] workingPumps;
+  
+  /**
+   * Boolean array of the working pump controllers. 
+   * True for a pump controller that works and false for a pump controller that doen't. 
+   */
   private boolean[] workingPumpControllers;
+  
+  /**
+   * Boolean array for the open pumps.
+   * True for pump that is open and false for a pump that isn't.
+   */
   private boolean[] openPumps;
+  
+  /**
+   * Boolean for if the water level device has failed.
+   */
   private boolean waterLevelDeviceFailure;
+  
+  /**
+   * Boolean for if the steam level device has failed. 
+   */
   private boolean steamLevelDeviceFailure;
+  
+  /**
+   * Boolean array for if any of the pumps have failed.
+   * True for failed, false for not. 
+   */
   private boolean[] pumpFailures;
+  
+  /**
+   * Boolean array for if any of the pump controllers have failed.
+   * True for failed, false for not. 
+   */
   private boolean[] pumpControllersFailures;
+  
+  /**
+   * Boolean for if the water level device needs to be repaired.
+   */
   private boolean waterLevelDeviceNeedingRepair;
+  
+  /**
+   * Boolean for if the steam level device needs to be repaired.
+   */
   private boolean steamLevelDeviceNeedingRepair;
+  
+  /**
+   * Boolean array for if any of the pumps need a repair.
+   */
   private boolean[] pumpsNeedingRepair;
+  
+  /**
+   * Boolean array for if any of the pump contr0llers need a repair.
+   */
   private boolean[] pumpControllersNeedingRepair;
+  
+  /**
+   * Boolean for if the water level device needs to be acknowledged that it has failed.
+   */
   private boolean waterLevelDeviceNeedingAck;
+  
+  /**
+   * Boolean for if the steam level device needs to be acknowledged that it has failed. 
+   */
   private boolean steamLevelDeviceNeedingAck;
+  
+  /**
+   * Boolean array for if any of the pumps need acknowledgement that they have failed.
+   */
   private boolean[] pumpsNeedingAck;
+  
+  /**
+   * Boolean array for if any of the pump controllers need acknowledgement that they have failed. 
+   */
   private boolean[] pumpControllersNeedingAck;
   
   private enum State {
@@ -111,7 +236,7 @@ public class MySteamBoilerController implements SteamBoilerController {
  * the system, and can be whatever is desired. In principle, however, it should
  * display a useful message indicating the current state of the controller.
  *
- * @return
+ * @return status messages. 
  */
   @Override
   public String getStatusMessage() {
@@ -260,7 +385,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   
   /**
    * Get the number of pumps that are open.
-   * @return
+   * @return = number of open pumps
    */
   private int getNumberOfOpenPumps() {
     int count = 0;
