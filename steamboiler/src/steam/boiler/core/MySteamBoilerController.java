@@ -18,9 +18,13 @@ public class MySteamBoilerController implements SteamBoilerController {
   * @author David J. Pearce
   */
   
-  private double waterLevel = 0.0;
-  private double previousWaterLevel = 0.0;
-  private double steamLevel = 0.0;
+  private int cycle = 5;
+  private double numberOfPumps;
+  private double pumpCapacity;
+  private double waterLevel;
+  private double previousWaterLevel;
+  private double steamLevel;
+  private double maxSteamLevel;
   private double maxNormalWaterLevel;
   private double minNormalWaterLevel;
   private double maxLimitWaterLevel;
@@ -51,9 +55,12 @@ public class MySteamBoilerController implements SteamBoilerController {
  */
   public MySteamBoilerController(SteamBoilerCharacteristics configuration) {
     this.configuration = configuration;
+    numberOfPumps = configuration.getNumberOfPumps();
+    pumpCapacity = configuration.getPumpCapacity(0);
     waterLevel = 0.0;
     previousWaterLevel = 0.0;
     steamLevel = 0.0;
+    maxSteamLevel = configuration.getMaximualSteamRate();
     maxNormalWaterLevel = configuration.getMaximalNormalLevel();
     minNormalWaterLevel = configuration.getMinimalNormalLevel();
     maxLimitWaterLevel = configuration.getMaximalLimitLevel();
@@ -122,9 +129,31 @@ public class MySteamBoilerController implements SteamBoilerController {
         outgoing.send(new Message(MessageKind.VALVE));
         openValve = true;
       }
+    } else if (waterLevel < minNormalWaterLevel) {
+      
     }
+    
     outgoing.send(new Message(MessageKind.PROGRAM_READY));
     mode = State.READY;
+  }
+  
+  private int predictNumberOfPumpsToOpen() {
+    int numberToOpen = 0;
+    double closestToNormal = Double.MAX_VALUE;
+    for (int i = 0;i < numberOfPumps;i++) {
+      double waterIn = (cycle * pumpCapacity * i);
+      double maxWaterLevel = waterLevel + waterIn - (cycle * steamLevel);
+      double minWaterLevel = waterLevel + waterIn - (cycle * maxSteamLevel);
+      double prediction = minWaterLevel + (Math.abs(maxWaterLevel - minWaterLevel) / 2.0);
+      double diff = Math.abs(midLimitWaterLevel - prediction);
+      
+      if (diff < closestToNormal) {
+        closestToNormal = diff;
+        numberToOpen = i;
+      }
+      
+    }
+    return numberToOpen;
   }
   
   /**
