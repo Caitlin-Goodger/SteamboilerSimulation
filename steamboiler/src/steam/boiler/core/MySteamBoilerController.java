@@ -128,6 +128,8 @@ public class MySteamBoilerController implements SteamBoilerController {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.NORMAL));
     } else if (mode == State.READY) {
       outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
+    }  else if (mode == State.WAITING) {
+      outgoing.send(new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION));
     }
   }
   
