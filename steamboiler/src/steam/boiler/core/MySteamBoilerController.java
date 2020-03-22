@@ -1,6 +1,6 @@
 package steam.boiler.core;
 
-import org.eclipse.jdt.annotation.NonNull;
+//import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import steam.boiler.model.SteamBoilerController;
@@ -121,17 +121,6 @@ public class MySteamBoilerController implements SteamBoilerController {
    */
   private boolean steamLevelDeviceFailure;
   
-  /**
-   * Boolean array for if any of the pumps have failed.
-   * True for failed, false for not. 
-   */
-  private boolean[] pumpFailures;
-  
-  /**
-   * Boolean array for if any of the pump controllers have failed.
-   * True for failed, false for not. 
-   */
-  private boolean[] pumpControllersFailures;
   
   /**
    * Boolean for if the water level device needs to be repaired.
@@ -254,9 +243,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     this.openValve = false;
     this.waterLevelDeviceFailure = false;
     this.steamLevelDeviceFailure = false;
-    this.pumpFailures = new boolean[this.numberOfPumps];
-    this.pumpControllersFailures = new boolean[this.numberOfPumps];
-    this.waterLevelDeviceNeedingRepair = false;;
+    this.waterLevelDeviceNeedingRepair = false;
     this.steamLevelDeviceNeedingRepair = false;
     this.pumpsNeedingRepair = new boolean[this.numberOfPumps];
     this.pumpControllersNeedingRepair = new boolean[this.numberOfPumps];
@@ -283,7 +270,11 @@ public class MySteamBoilerController implements SteamBoilerController {
  */
   @Override
   public String getStatusMessage() {
-    return this.mode.toString();
+    String statusMessage = this.mode.toString();
+    if (statusMessage != null) {
+      return statusMessage;
+    }
+    return ""; //$NON-NLS-1$
   }
 
   /**
@@ -308,9 +299,11 @@ public class MySteamBoilerController implements SteamBoilerController {
       // Level and steam messages required, so emergency stop.
       this.mode = State.EMERGENCY_STOP;
     } else {
-      this.waterLevel = extractOnlyMatch(MessageKind.LEVEL_v,incoming).getDoubleParameter();
-      this.steamLevel = extractOnlyMatch(MessageKind.STEAM_v,incoming).getDoubleParameter();
-      
+      if (levelMessage != null && steamMessage != null) {
+        this.waterLevel = levelMessage.getDoubleParameter();
+        this.steamLevel = steamMessage.getDoubleParameter();
+      }
+
     }
     // FIXME: this is where the main implementation stems from
     if (this.mode == State.RESCUE) {
@@ -372,11 +365,7 @@ public class MySteamBoilerController implements SteamBoilerController {
       }
       changeNumberOpenPumps(toOpen,outgoing);
     }
-    
-    double waterIn = (this.cycle * this.pumpCapacity * getNumberOfOpenPumps());
-    double maxWaterLevel = this.waterLevel + waterIn - (this.cycle * this.steamLevel);
-    double minWaterLevel = this.waterLevel + waterIn - (this.cycle * this.maxSteamLevel);
-    double prediction = minWaterLevel + (Math.abs(maxWaterLevel - minWaterLevel) / 2.0);
+
     
     
   }
@@ -841,8 +830,8 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param pumpControlStates Extracted PUMP_CONTROL_STATE_n_b messages.
    * @return = if there is a transmission failure. 
    */
-  private boolean transmissionFailure(Message levelMessage, 
-      Message steamMessage, Message[] pumpStates,
+  private boolean transmissionFailure(@Nullable Message levelMessage, 
+      @Nullable Message steamMessage, Message[] pumpStates,
       Message[] pumpControlStates) {
     // Check level readings
     if (levelMessage == null) {
@@ -871,7 +860,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @return The matching message, or <code>null</code> if there was not exactly
    *         one match.
    */
-  private static Message extractOnlyMatch(MessageKind kind, Mailbox incoming) {
+  private static @Nullable Message extractOnlyMatch(MessageKind kind, Mailbox incoming) {
     Message match = null;
     for (int i = 0; i != incoming.size(); ++i) {
       Message ith = incoming.read(i);
