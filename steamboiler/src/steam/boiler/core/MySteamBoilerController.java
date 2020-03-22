@@ -554,6 +554,11 @@ public class MySteamBoilerController implements SteamBoilerController {
     }
   }
   
+  /**
+   * Count the number of true values in an array list. 
+   * @param list = list of count values from. 
+   * @return = number of true values. 
+   */
   private int countTrueValues(boolean[] list) {
     assert list != null;
     int count = 0;
@@ -634,7 +639,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * Detect if there is a pump failure.
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages.
-   * @return
+   * @return = if there if a pump failure. 
    */
   private boolean detectedPumpFailure(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
@@ -668,7 +673,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * Detect if there is a controller failure.
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages. 
-   * @return
+   * @return = if there is a controller failure. 
    */
   private boolean detectedControllerFailure(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
@@ -698,7 +703,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   /**
    * Check that if the stream device has failed.
    * @param outgoing = outgoing messages. 
-   * @return
+   * @return = if there if a steam level failure
    */
   private boolean detectedSteamLevelFailure(Mailbox outgoing) {
     assert outgoing != null;
@@ -714,7 +719,7 @@ public class MySteamBoilerController implements SteamBoilerController {
 
   /**
    * Check if the water level is within the limits.
-   * @return
+   * @return = if the water is with the limits
    */
   private boolean waterLevelInLimits() {
     if (waterLevel > minLimitWaterLevel && waterLevel < maxLimitWaterLevel) {
@@ -726,7 +731,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   /**
    * Check if the water level device has found a failure.
    * @param outgoing = outgoing messages.
-   * @return
+   * @return = if there is a water level failure. 
    */
   private boolean detectedWaterLevelFailure(Mailbox outgoing) {
     assert outgoing != null;
@@ -779,6 +784,11 @@ public class MySteamBoilerController implements SteamBoilerController {
     previousWaterLevel = waterLevel; 
   }
   
+  /**
+   * Predict how many pumps should be open to keep the water within the limits
+   * Calculate where the water would be for each option (0,1...) 
+   * @return = the number of open pumps that keep it closest to the middle
+   */
   private int predictNumberOfPumpsToOpen() {
     int numberToOpen = 0;
     double closestToNormal = Double.MAX_VALUE;
@@ -798,7 +808,12 @@ public class MySteamBoilerController implements SteamBoilerController {
     return numberToOpen;
   }
   
-  
+  /**
+   * Open a given number of pumps. 
+   * Open how many should be open and then close the rest.
+   * @param numberPumpsToOpen = the number of pumps that should be open.
+   * @param outgoing = outgoing messages. 
+   */
   private void changeNumberOpenPumps(int numberPumpsToOpen, Mailbox outgoing) {
     int counter = 0;
     for (int i = 0; i < numberOfPumps; i++) {
@@ -828,7 +843,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param steamMessage      Extracted STEAM_v message.
    * @param pumpStates        Extracted PUMP_STATE_n_b messages.
    * @param pumpControlStates Extracted PUMP_CONTROL_STATE_n_b messages.
-   * @return
+   * @return = if there is a transmission failure. 
    */
   private boolean transmissionFailure(Message levelMessage, 
       Message steamMessage, Message[] pumpStates,
