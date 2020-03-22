@@ -627,11 +627,7 @@ public class MySteamBoilerController implements SteamBoilerController {
       return;
     }
     
-    if (waterLevel > maxNormalWaterLevel) {
-      changeNumberOpenPumps(0,outgoing);
-    } else {
-      changeNumberOpenPumps(predictNumberOfPumpsToOpen(),outgoing);
-    }
+    changeNumberOpenPumps(predictNumberOfPumpsToOpen(),outgoing);
     previousWaterLevel = waterLevel;
   }
   
@@ -761,7 +757,6 @@ public class MySteamBoilerController implements SteamBoilerController {
       mode = State.EMERGENCY_STOP;
       return;
     }
-    
     
     
     if (waterLevel > maxNormalWaterLevel) {
