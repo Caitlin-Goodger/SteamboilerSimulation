@@ -473,8 +473,10 @@ public class MySteamBoilerController implements SteamBoilerController {
           extractAllMatches(MessageKind.PUMP_CONTROL_REPAIRED_n,incoming);
       
       for (int i = 0; i < pumpControllersMessages.length; i++) {
-        MySteamBoilerController.pumpControllersNeedingRepair[pumpControllersMessages[i].getIntegerParameter()] = false;
-        MySteamBoilerController.workingPumpControllers[pumpControllersMessages[i].getIntegerParameter()] = true;
+        MySteamBoilerController.pumpControllersNeedingRepair
+        [pumpControllersMessages[i].getIntegerParameter()] = false;
+        MySteamBoilerController.workingPumpControllers
+        [pumpControllersMessages[i].getIntegerParameter()] = true;
         outgoing.send(new Message(MessageKind.PUMP_CONTROL_REPAIRED_ACKNOWLEDGEMENT_n,
             pumpControllersMessages[i].getIntegerParameter()));
         
@@ -519,7 +521,8 @@ public class MySteamBoilerController implements SteamBoilerController {
         }
       } else {
         for (int i = 0; i < this.numberOfPumps; i++) {
-          if (!MySteamBoilerController.workingPumps[i] && MySteamBoilerController.pumpsNeedingAck[i]) {
+          if (!MySteamBoilerController.workingPumps[i] 
+              && MySteamBoilerController.pumpsNeedingAck[i]) {
             outgoing.send(new Message(MessageKind.PUMP_FAILURE_DETECTION_n,i));
           }
         }
@@ -531,12 +534,15 @@ public class MySteamBoilerController implements SteamBoilerController {
           extractAllMatches(MessageKind.PUMP_CONTROL_FAILURE_ACKNOWLEDGEMENT_n,incoming);
       if (pumpControllerMessages.length > 0) {
         for (int i = 0; i < pumpControllerMessages.length; i++) {
-          MySteamBoilerController.pumpControllersNeedingAck[pumpControllerMessages[i].getIntegerParameter()] = false;
-          MySteamBoilerController.pumpControllersNeedingRepair[pumpControllerMessages[i].getIntegerParameter()] = true;
+          MySteamBoilerController.pumpControllersNeedingAck
+          [pumpControllerMessages[i].getIntegerParameter()] = false;
+          MySteamBoilerController.pumpControllersNeedingRepair
+          [pumpControllerMessages[i].getIntegerParameter()] = true;
         }
       } else {
         for (int i = 0; i < this.numberOfPumps; i++) {
-          if (!MySteamBoilerController.workingPumpControllers[i] && MySteamBoilerController.pumpControllersNeedingAck[i]) {
+          if (!MySteamBoilerController.workingPumpControllers[i] 
+              && MySteamBoilerController.pumpControllersNeedingAck[i]) {
             outgoing.send(new Message(MessageKind.PUMP_CONTROL_FAILURE_DETECTION_n,i));
           }
         }
@@ -669,7 +675,8 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     for (int i = 0; i < this.numberOfPumps; i++) {
       if (MySteamBoilerController.openPumps[i] == pumpMessages[i].getBooleanParameter()) {
-        if (MySteamBoilerController.openPumps[i] != pumpControllerMessages[i].getBooleanParameter()) {
+        if (MySteamBoilerController.openPumps[i] 
+            != pumpControllerMessages[i].getBooleanParameter()) {
           MySteamBoilerController.workingPumpControllers[i] = false;
           MySteamBoilerController.pumpControllersNeedingAck[i] = true;
           outgoing.send(new Message(MessageKind.PUMP_CONTROL_FAILURE_DETECTION_n,i));
