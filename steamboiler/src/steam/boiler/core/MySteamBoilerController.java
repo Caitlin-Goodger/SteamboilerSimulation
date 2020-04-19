@@ -455,7 +455,8 @@ public class MySteamBoilerController implements SteamBoilerController {
       }
     }
     
-    if (countTrueValues(this.workingPumps) < this.numberOfPumps && countTrueValues(this.pumpsNeedingRepair) > 0) {
+    if (countTrueValues(this.workingPumps) < this.numberOfPumps 
+        && countTrueValues(this.pumpsNeedingRepair) > 0) {
       Mailbox.Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_REPAIRED_n,incoming);
       
       for (int i = 0; i < pumpMessages.length; i++) {
