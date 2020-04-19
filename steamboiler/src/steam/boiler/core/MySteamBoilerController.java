@@ -426,8 +426,8 @@ public class MySteamBoilerController implements SteamBoilerController {
         count++;
       }
     }
-    
-    return count++;
+    assert count >= 0;
+    return count;
   }
 
   /**
@@ -563,6 +563,7 @@ public class MySteamBoilerController implements SteamBoilerController {
         count++;
       }
     }
+    assert count >= 0;
     return count;
   }
 
@@ -797,6 +798,7 @@ public class MySteamBoilerController implements SteamBoilerController {
       }
       
     }
+    assert numberToOpen >= 0 && numberToOpen <= this.numberOfPumps;
     return numberToOpen;
   }
   
