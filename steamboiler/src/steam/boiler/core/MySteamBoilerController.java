@@ -218,6 +218,8 @@ public class MySteamBoilerController implements SteamBoilerController {
  * Identifies the current mode in which the controller is operating.
  */
   private State mode = State.WAITING;
+  
+  
 
   /**
  * Construct a steam boiler controller for a given set of characteristics.
@@ -456,7 +458,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     if (countTrueValues(MySteamBoilerController.workingPumps) < this.numberOfPumps 
         && countTrueValues(MySteamBoilerController.pumpsNeedingRepair) > 0) {
-      Mailbox.Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_REPAIRED_n,incoming);
+      Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_REPAIRED_n,incoming);
       
       for (int i = 0; i < pumpMessages.length; i++) {
         MySteamBoilerController.pumpsNeedingRepair[pumpMessages[i].getIntegerParameter()] = false;
@@ -469,7 +471,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     if (countTrueValues(MySteamBoilerController.workingPumpControllers) < this.numberOfPumps 
         && countTrueValues(MySteamBoilerController.pumpControllersNeedingRepair) > 0) {
-      Mailbox.Message[] pumpControllersMessages = 
+      Message[] pumpControllersMessages = 
           extractAllMatches(MessageKind.PUMP_CONTROL_REPAIRED_n,incoming);
       
       for (int i = 0; i < pumpControllersMessages.length; i++) {
@@ -512,7 +514,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     //If there is at least one pump that has failed
     if (countTrueValues(MySteamBoilerController.workingPumps) < this.numberOfPumps) {
-      Mailbox.Message[] pumpMessages = 
+      Message[] pumpMessages = 
           extractAllMatches(MessageKind.PUMP_FAILURE_ACKNOWLEDGEMENT_n,incoming);
       if (pumpMessages.length > 0) {
         for (int i = 0; i < pumpMessages.length; i++) {
@@ -530,7 +532,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     }
     
     if (countTrueValues(MySteamBoilerController.workingPumpControllers) < this.numberOfPumps) {
-      Mailbox.Message[] pumpControllerMessages = 
+      Message[] pumpControllerMessages = 
           extractAllMatches(MessageKind.PUMP_CONTROL_FAILURE_ACKNOWLEDGEMENT_n,incoming);
       if (pumpControllerMessages.length > 0) {
         for (int i = 0; i < pumpControllerMessages.length; i++) {
@@ -636,7 +638,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    */
   private boolean detectedPumpFailure(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
-    Mailbox.Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
+    Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
 
     for (int i = 0; i < this.numberOfPumps; i++) {
       if (MySteamBoilerController.workingPumps[i]) {
@@ -671,7 +673,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   private boolean detectedControllerFailure(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
-    Mailbox.Message[] pumpControllerMessages = 
+    Message[] pumpControllerMessages = 
         extractAllMatches(MessageKind.PUMP_CONTROL_STATE_n_b, incoming);
     
     for (int i = 0; i < this.numberOfPumps; i++) {
