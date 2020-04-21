@@ -219,12 +219,34 @@ public class MySteamBoilerController implements SteamBoilerController {
  */
   private State mode = State.WAITING;
   
+  /**
+   * Stores a message that doesn't need any parameters.
+   * Used to send to outgoing mailbox.
+   */
   private Message messNoPara;
-  //private Message messDoublePara;
+  
+  /**
+   * Stores a message that needs an int parameter.
+   * Used to send to outgoing mailbox.
+   */
   private Message messIntPara;
-  //private Message messIntBoolPara;
+  
+  /**
+   * Stores a message that needs a mode as a parameter.
+   * Used to send to outgoing mailbox.
+   */
   private Message messModePara;
+  
+  /**
+   * Stores the messages to open the pumps.
+   * Used to send to outgoing mailbox. 
+   */
   private @NonNull Message[] openMessages;
+  
+  /**
+   * Stores the messages to close the pumps.
+   * Used to send to outgoing mailbox. 
+   */
   private @NonNull Message[] closeMessages;
 
   /**
