@@ -640,7 +640,7 @@ public class MySteamBoilerController implements SteamBoilerController {
 
     for (int i = 0; i < this.numberOfPumps; i++) {
       if (MySteamBoilerController.workingPumps[i]) {
-        if (MySteamBoilerController.openPumps[i] ^ pumpMessages[i].getBooleanParameter()) {
+        if (MySteamBoilerController.openPumps[i] != pumpMessages[i].getBooleanParameter()) {
           if (MySteamBoilerController.openPumps[i]) {
             MySteamBoilerController.openPumps[i] = false;
           } else {
@@ -670,7 +670,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    */
   private boolean detectedControllerFailure(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
-    Mailbox.Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
+    Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
     Mailbox.Message[] pumpControllerMessages = 
         extractAllMatches(MessageKind.PUMP_CONTROL_STATE_n_b, incoming);
     
@@ -701,8 +701,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    */
   private boolean detectedSteamLevelFailure(Mailbox outgoing) {
     assert outgoing != null;
-    
-    if (this.steamLevel > this.maxSteamLevel || this.steamLevel <= 0) {
+    if (this.steamLevel > this.maxSteamLevel || this.steamLevel < 0) {
       outgoing.send(new Message(MessageKind.STEAM_FAILURE_DETECTION));
       this.steamLevelDeviceFailure = true;
       this.steamLevelDeviceNeedingAck = true;
