@@ -49,11 +49,6 @@ public class MySteamBoilerController implements SteamBoilerController {
   private double waterCapacity;
   
   /**
-   * The water level the previous cycle. 
-   */
-  private double previousWaterLevel;
-  
-  /**
    * The current steam level in the boiler. 
    */
   private double steamLevel;
@@ -260,7 +255,6 @@ public class MySteamBoilerController implements SteamBoilerController {
     this.pumpCapacity = configuration.getPumpCapacity(0);
     this.waterLevel = 0.0;
     this.waterCapacity = configuration.getCapacity();
-    this.previousWaterLevel = 0.0;
     this.steamLevel = 0.0;
     this.maxSteamLevel = configuration.getMaximualSteamRate();
     this.maxNormalWaterLevel = configuration.getMaximalNormalLevel();
@@ -394,7 +388,7 @@ public class MySteamBoilerController implements SteamBoilerController {
       this.mode = State.NORMAL;
     }
     System.out.println(this.mode);
-    if (this.previousWaterLevel < this.midLimitWaterLevel) {
+    if (this.waterLevel < this.midLimitWaterLevel) {
       changeNumberOpenPumps(getNumberOfOpenPumps() + 1, outgoing);
     } else {
       int toOpen = getNumberOfOpenPumps() - 1;
@@ -449,8 +443,6 @@ public class MySteamBoilerController implements SteamBoilerController {
       }
       changeNumberOpenPumps(toOpen,outgoing);
     }
-    
-    this.previousWaterLevel = this.waterLevel;
   }
   
   /**
@@ -664,7 +656,6 @@ public class MySteamBoilerController implements SteamBoilerController {
     }
     
     changeNumberOpenPumps(predictNumberOfPumpsToOpen(),outgoing);
-    this.previousWaterLevel = this.waterLevel;
   }
   
   /**
@@ -811,8 +802,7 @@ public class MySteamBoilerController implements SteamBoilerController {
       changeNumberOpenPumps(0,outgoing);
       outgoing.send(this.messNoPara.set(MessageKind.PROGRAM_READY));
       this.mode = State.READY;
-    }
-    this.previousWaterLevel = this.waterLevel; 
+    } 
   }
   
   /**
