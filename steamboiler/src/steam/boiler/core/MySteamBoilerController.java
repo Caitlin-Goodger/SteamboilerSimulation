@@ -339,17 +339,17 @@ public class MySteamBoilerController implements SteamBoilerController {
     }
     // FIXME: this is where the main implementation stems from
     if (this.mode == State.RESCUE) {
-      rescue(incoming,outgoing);
+      boilerRescueMode(incoming,outgoing);
     } else if (this.mode == State.DEGRADED) {
-      degrade(incoming, outgoing);
+      boilerDegradedMode(incoming, outgoing);
     } else if (this.mode == State.EMERGENCY_STOP) {
-      emergencyStop(incoming,outgoing);
+      boilerEmergencyStopMode(incoming,outgoing);
     } else if (this.mode == State.NORMAL) {
-      normal(incoming,outgoing);
+      boilerNormalMode(incoming,outgoing);
     } else if (this.mode == State.READY) {
-      ready(incoming,outgoing);
+      boilerReadyMode(incoming,outgoing);
     } else if (this.mode == State.WAITING) {
-      waiting(incoming,outgoing);
+      boilerWaitingMode(incoming,outgoing);
     }
     
     // NOTE: this is an example message send to illustrate the syntax
@@ -374,7 +374,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages. 
    */
-  private void rescue(Mailbox incoming, Mailbox outgoing) {
+  private void boilerRescueMode(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     assert this.mode == State.RESCUE;
     
@@ -408,6 +408,15 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     this.waterLevel = prediction;
     
+    if (this.waterLevel < this.midLimitWaterLevel) {
+      changeNumberOpenPumps(getNumberOfOpenPumps() + 1,outgoing);
+    } else {
+      int toOpen = getNumberOfOpenPumps() - 1;
+      if (toOpen < 0) {
+        toOpen = 0;
+      }
+      changeNumberOpenPumps(toOpen,outgoing);
+    }
   }
 
   /**
@@ -415,7 +424,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param incoming = incoming messages. 
    * @param outgoing = outgoing messages. 
    */
-  public void degrade(Mailbox incoming, Mailbox outgoing) {
+  public void boilerDegradedMode(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     assert this.mode == State.DEGRADED;
     
@@ -611,7 +620,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages. 
    */
-  public void emergencyStop(Mailbox incoming, Mailbox outgoing) {
+  public void boilerEmergencyStopMode(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     assert this.mode == State.EMERGENCY_STOP;
     
@@ -628,7 +637,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param incoming = incoming messages.
    * @param outgoing = incoming messages. 
    */
-  public void ready(Mailbox incoming, Mailbox outgoing) {
+  public void boilerReadyMode(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     assert this.mode == State.READY;
     if (extractOnlyMatch(MessageKind.PHYSICAL_UNITS_READY,incoming) != null) {
@@ -643,7 +652,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages. 
    */
-  public void normal(Mailbox incoming, Mailbox outgoing) {
+  public void boilerNormalMode(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     assert this.mode == State.NORMAL;
     
@@ -780,7 +789,7 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param incoming = incoming messages. 
    * @param outgoing = outgoing messages. 
    */
-  public void waiting(Mailbox incoming, Mailbox outgoing) {
+  public void boilerWaitingMode(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     assert this.mode == State.WAITING;
     if (extractOnlyMatch(MessageKind.STEAM_BOILER_WAITING,incoming) == null) {
