@@ -380,9 +380,7 @@ public class MySteamBoilerController implements SteamBoilerController {
     
     processIncomingMessages(incoming,outgoing);
     doRepairs(incoming,outgoing);
-    
-    
-    
+
     if (detectedWaterLevelFailure(outgoing) 
         && (detectedSteamLevelFailure(outgoing) || detectedPumpFailure(incoming,outgoing))) {
       this.mode = State.EMERGENCY_STOP;
@@ -403,7 +401,12 @@ public class MySteamBoilerController implements SteamBoilerController {
       }
       return;
     }
-
+    double waterIn = (this.cycle * this.pumpCapacity * getNumberOfOpenPumps());
+    double maxWaterLevel = this.waterLevel + waterIn - (this.cycle * this.steamLevel);
+    double minWaterLevel = this.waterLevel + waterIn - (this.cycle * this.maxSteamLevel);
+    double prediction = minWaterLevel + (Math.abs(maxWaterLevel - minWaterLevel) / 2.0);
+    
+    this.waterLevel = prediction;
     
   }
 
