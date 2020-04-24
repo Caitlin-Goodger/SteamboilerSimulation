@@ -378,27 +378,15 @@ public class MySteamBoilerController implements SteamBoilerController {
     assert incoming != null && outgoing != null;
     assert this.mode == State.RESCUE;
     
-    processIncomingMessages(incoming,outgoing);
-    doRepairs(incoming,outgoing);
-    
-    if (detectedPumpFailure(incoming,outgoing) || detectedControllerFailure(incoming, outgoing) 
-        || detectedSteamLevelFailure(outgoing)) {
-      this.mode = State.DEGRADED;
-    } else {
-      this.mode = State.NORMAL;
+    if (detectedSteamLevelFailure(outgoing) 
+        || detectedPumpFailure(incoming,outgoing)) {
+      this.mode = State.EMERGENCY_STOP;
+      
     }
-    System.out.println(this.mode);
-    if (this.waterLevel < this.midLimitWaterLevel) {
-      changeNumberOpenPumps(getNumberOfOpenPumps() + 1, outgoing);
-    } else {
-      int toOpen = getNumberOfOpenPumps() - 1;
-      if (toOpen < 0) {
-        toOpen = 0;
-      }
-      changeNumberOpenPumps(toOpen,outgoing);
-    }
-
     
+    if (!waterLevelInLimits()) {
+      this.mode = State.EMERGENCY_STOP;
+    }
     
   }
 
