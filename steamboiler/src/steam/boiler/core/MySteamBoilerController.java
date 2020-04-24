@@ -371,6 +371,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   
   /**
    * Rescue operation.
+   * Boiler tries to keep functioning with water failure
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages. 
    */
@@ -421,6 +422,7 @@ public class MySteamBoilerController implements SteamBoilerController {
 
   /**
    * Degrading Operation. 
+   * Boiler tries continue with a physical unit failure
    * @param incoming = incoming messages. 
    * @param outgoing = outgoing messages. 
    */
@@ -480,6 +482,7 @@ public class MySteamBoilerController implements SteamBoilerController {
 
   /**
    * Do repairs for the physical units. 
+   * Repairs the units that are broken
    * @param incoming = incoming.
    * @param outgoing = outgoing. 
    */
@@ -534,6 +537,7 @@ public class MySteamBoilerController implements SteamBoilerController {
 
   /**
    * Process the messages that have come from the parts.
+   * Checks which devices have failures
    * @param incoming = incoming messages;
    * @param outgoing = outgoing messages;
    */
@@ -600,7 +604,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   
   /**
    * Count the number of true values in an array list. 
-   * @param list = list of count values from. 
+   * @param list = list of count true values from. 
    * @return = number of true values. 
    */
   private static int countTrueValues(boolean[] list) {
@@ -617,6 +621,7 @@ public class MySteamBoilerController implements SteamBoilerController {
 
   /**
    * Do Emergency Stop operation. 
+   * Stops the boiler as something has gone wrong
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages. 
    */
@@ -634,6 +639,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   
   /**
    * Do ready operation.
+   * Wait for the physical units to be ready
    * @param incoming = incoming messages.
    * @param outgoing = incoming messages. 
    */
@@ -649,6 +655,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   
   /**
    * Does the normal operation. 
+   * Boiler runs normally until it founds a device failure
    * @param incoming = incoming messages.
    * @param outgoing = outgoing messages. 
    */
@@ -786,6 +793,7 @@ public class MySteamBoilerController implements SteamBoilerController {
 
   /**
    * Does the waiting operation. 
+   * Make sure that everything is working and get the water to the right level
    * @param incoming = incoming messages. 
    * @param outgoing = outgoing messages. 
    */
