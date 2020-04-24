@@ -837,6 +837,8 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param outgoing = outgoing messages. 
    */
   private void changeNumberOpenPumps(int numberPumpsToOpen, Mailbox outgoing) {
+    assert outgoing != null;
+    assert numberPumpsToOpen >= 0;
     int counter = 0;
     for (int i = 0; i < this.numberOfPumps; i++) {
       if (counter < numberPumpsToOpen) {
