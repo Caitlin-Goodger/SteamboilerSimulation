@@ -7,6 +7,7 @@ import steam.boiler.model.SteamBoilerController;
 import steam.boiler.util.Mailbox;
 import steam.boiler.util.Mailbox.Message;
 import steam.boiler.util.Mailbox.MessageKind;
+import steam.boiler.util.MemoryAnnotations.Initialisation;
 import steam.boiler.util.SteamBoilerCharacteristics;
 
 
@@ -218,49 +219,60 @@ public class MySteamBoilerController implements SteamBoilerController {
    * Stores a message that doesn't need any parameters.
    * Used to send to outgoing mailbox.
    */
-  private Message messNoPara;
+  private Message messNoPara = new Message(MessageKind.VALVE);
   
   /**
    * Stores a message that needs an int parameter.
    * Used to send to outgoing mailbox.
    */
-  private Message messIntPara;
+  private Message messIntPara = new Message(MessageKind.PUMP_CONTROL_FAILURE_ACKNOWLEDGEMENT_n,0);
   
   /**
    * Stores a message that needs a mode as a parameter.
    * Used to send to outgoing mailbox.
    */
-  private Message messModePara;
+  private Message messModePara = new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION);
   
   /**
    * Stores the messages to open the pumps.
    * Used to send to outgoing mailbox. 
    */
-  private @NonNull Message[] openMessages;
+  private @NonNull Message[] openMessages = new @NonNull Message[4];
   
   /**
    * Stores the messages to close the pumps.
    * Used to send to outgoing mailbox. 
    */
-  private @NonNull Message[] closeMessages;
+  private @NonNull Message[] closeMessages = new @NonNull Message[4];
 
   /**
  * Construct a steam boiler controller for a given set of characteristics.
  *
  * @param configuration The boiler characteristics to be used.
  */
+  
   public MySteamBoilerController(SteamBoilerCharacteristics configuration) {
     this.configuration = configuration;
-    this.numberOfPumps = configuration.getNumberOfPumps();
-    this.pumpCapacity = configuration.getPumpCapacity(0);
+    doInitialisation();
+    
+  }
+
+  /**
+   * Complete all the initialization.
+   * Used to assign dynamic memory
+   */
+  @Initialisation
+  private void doInitialisation() {
+    this.numberOfPumps = this.configuration.getNumberOfPumps();
+    this.pumpCapacity = this.configuration.getPumpCapacity(0);
     this.waterLevel = 0.0;
-    this.waterCapacity = configuration.getCapacity();
+    this.waterCapacity = this.configuration.getCapacity();
     this.steamLevel = 0.0;
-    this.maxSteamLevel = configuration.getMaximualSteamRate();
-    this.maxNormalWaterLevel = configuration.getMaximalNormalLevel();
-    this.minNormalWaterLevel = configuration.getMinimalNormalLevel();
-    this.maxLimitWaterLevel = configuration.getMaximalLimitLevel();
-    this.minLimitWaterLevel = configuration.getMinimalLimitLevel();
+    this.maxSteamLevel = this.configuration.getMaximualSteamRate();
+    this.maxNormalWaterLevel = this.configuration.getMaximalNormalLevel();
+    this.minNormalWaterLevel = this.configuration.getMinimalNormalLevel();
+    this.maxLimitWaterLevel = this.configuration.getMaximalLimitLevel();
+    this.minLimitWaterLevel = this.configuration.getMinimalLimitLevel();
     this.midLimitWaterLevel = this.minNormalWaterLevel 
         + ((this.maxNormalWaterLevel - this.minNormalWaterLevel) / 2.0);
     this.openValve = false;
@@ -288,8 +300,6 @@ public class MySteamBoilerController implements SteamBoilerController {
     this.messNoPara = new Message(MessageKind.VALVE);
     this.messIntPara = new Message(MessageKind.PUMP_CONTROL_FAILURE_ACKNOWLEDGEMENT_n,0);
     this.messModePara = new Message(MessageKind.MODE_m, Mailbox.Mode.INITIALISATION);
-
-    
   }
 
   /**
