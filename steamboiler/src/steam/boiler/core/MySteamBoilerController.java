@@ -207,7 +207,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   /**
    * Records the configuration characteristics for the given boiler problem.
    */
-  private final SteamBoilerCharacteristics configuration;
+  //private final SteamBoilerCharacteristics configuration;
 
 
   /**
@@ -252,27 +252,27 @@ public class MySteamBoilerController implements SteamBoilerController {
  */
   
   public MySteamBoilerController(SteamBoilerCharacteristics configuration) {
-    this.configuration = configuration;
-    doInitialisation();
+    doInitialisation(configuration);
     
   }
 
   /**
    * Complete all the initialization.
    * Used to assign dynamic memory
+   * @param configuration 
    */
   @Initialisation
-  private void doInitialisation() {
-    this.numberOfPumps = this.configuration.getNumberOfPumps();
-    this.pumpCapacity = this.configuration.getPumpCapacity(0);
+  private void doInitialisation(SteamBoilerCharacteristics configuration) {
+    this.numberOfPumps = configuration.getNumberOfPumps();
+    this.pumpCapacity = configuration.getPumpCapacity(0);
     this.waterLevel = 0.0;
-    this.waterCapacity = this.configuration.getCapacity();
+    this.waterCapacity = configuration.getCapacity();
     this.steamLevel = 0.0;
-    this.maxSteamLevel = this.configuration.getMaximualSteamRate();
-    this.maxNormalWaterLevel = this.configuration.getMaximalNormalLevel();
-    this.minNormalWaterLevel = this.configuration.getMinimalNormalLevel();
-    this.maxLimitWaterLevel = this.configuration.getMaximalLimitLevel();
-    this.minLimitWaterLevel = this.configuration.getMinimalLimitLevel();
+    this.maxSteamLevel = configuration.getMaximualSteamRate();
+    this.maxNormalWaterLevel = configuration.getMaximalNormalLevel();
+    this.minNormalWaterLevel = configuration.getMinimalNormalLevel();
+    this.maxLimitWaterLevel = configuration.getMaximalLimitLevel();
+    this.minLimitWaterLevel = configuration.getMinimalLimitLevel();
     this.midLimitWaterLevel = this.minNormalWaterLevel 
         + ((this.maxNormalWaterLevel - this.minNormalWaterLevel) / 2.0);
     this.openValve = false;
@@ -914,10 +914,10 @@ public class MySteamBoilerController implements SteamBoilerController {
     } else if (steamMessage == null) {
       // Nonsense or missing steam reading
       return true;
-    } else if (pumpStates.length != this.configuration.getNumberOfPumps()) {
+    } else if (pumpStates.length != this.numberOfPumps) {
       // Nonsense pump state readings
       return true;
-    } else if (pumpControlStates.length != this.configuration.getNumberOfPumps()) {
+    } else if (pumpControlStates.length != this.numberOfPumps) {
       // Nonsense pump control state readings
       return true;
     }
