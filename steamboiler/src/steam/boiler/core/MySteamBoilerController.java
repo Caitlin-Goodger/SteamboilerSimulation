@@ -110,53 +110,53 @@ public class MySteamBoilerController implements SteamBoilerController {
   /**
    * Boolean for if the water level device has failed.
    */
-  private boolean waterLevelDeviceFailure;
+  private boolean waterLevelFailure;
   
   /**
    * Boolean for if the steam level device has failed. 
    */
-  private boolean steamLevelDeviceFailure;
+  private boolean steamLevelFailure;
   
   
   /**
    * Boolean for if the water level device needs to be repaired.
    */
-  private boolean waterLevelDeviceNeedingRepair;
+  private boolean waterLevelNeedingRepair;
   
   /**
    * Boolean for if the steam level device needs to be repaired.
    */
-  private boolean steamLevelDeviceNeedingRepair;
+  private boolean steamLevelNeedingRepair;
   
   /**
    * Boolean array for if any of the pumps need a repair.
    */
-  public boolean[] pumpsNeedingRepair = new boolean[4];
+  public boolean[] pumpsToRepair = new boolean[4];
   
   /**
    * Boolean array for if any of the pump contr0llers need a repair.
    */
-  public boolean[] pumpControllersNeedingRepair = new boolean[4];
+  public boolean[] pumpControllersToRepair = new boolean[4];
   
   /**
    * Boolean for if the water level device needs to be acknowledged that it has failed.
    */
-  private boolean waterLevelDeviceNeedingAck;
+  private boolean waterLevelDeviceToAcknowledge;
   
   /**
    * Boolean for if the steam level device needs to be acknowledged that it has failed. 
    */
-  private boolean steamLevelDeviceNeedingAck;
+  private boolean steamLevelDeviceToAcknowedge;
   
   /**
    * Boolean array for if any of the pumps need acknowledgement that they have failed.
    */
-  public boolean[] pumpsNeedingAck = new boolean[4];
+  public boolean[] pumpsToAcknowledge = new boolean[4];
   
   /**
    * Boolean array for if any of the pump controllers need acknowledgement that they have failed. 
    */
-  public boolean[] pumpControllersNeedingAck = new boolean[4];
+  public boolean[] pumpControllersToAcknowledge = new boolean[4];
   
   /**
    * List of the states that the controller can be in. 
@@ -259,7 +259,7 @@ public class MySteamBoilerController implements SteamBoilerController {
   /**
    * Complete all the initialization.
    * Used to assign dynamic memory
-   * @param configuration 
+   * @param configuration = configuration settings of boiler.
    */
   @Initialisation
   private void doInitialisation(SteamBoilerCharacteristics configuration) {
@@ -276,16 +276,16 @@ public class MySteamBoilerController implements SteamBoilerController {
     this.midLimitWaterLevel = this.minNormalWaterLevel 
         + ((this.maxNormalWaterLevel - this.minNormalWaterLevel) / 2.0);
     this.openValve = false;
-    this.waterLevelDeviceFailure = false;
-    this.steamLevelDeviceFailure = false;
-    this.waterLevelDeviceNeedingRepair = false;
-    this.steamLevelDeviceNeedingRepair = false;
-    this.pumpsNeedingRepair = new boolean[this.numberOfPumps];
-    this.pumpControllersNeedingRepair = new boolean[this.numberOfPumps];
-    this.waterLevelDeviceNeedingAck = false;
-    this.steamLevelDeviceNeedingAck = false;
-    this.pumpsNeedingAck = new boolean[this.numberOfPumps];
-    this.pumpControllersNeedingAck = new boolean[this.numberOfPumps];
+    this.waterLevelFailure = false;
+    this.steamLevelFailure = false;
+    this.waterLevelNeedingRepair = false;
+    this.steamLevelNeedingRepair = false;
+    this.pumpsToRepair = new boolean[this.numberOfPumps];
+    this.pumpControllersToRepair = new boolean[this.numberOfPumps];
+    this.waterLevelDeviceToAcknowledge = false;
+    this.steamLevelDeviceToAcknowedge = false;
+    this.pumpsToAcknowledge = new boolean[this.numberOfPumps];
+    this.pumpControllersToAcknowledge = new boolean[this.numberOfPumps];
     this.openPumps = new boolean[this.numberOfPumps];
     this.workingPumps = new boolean[this.numberOfPumps];
     this.workingPumpControllers = new boolean[this.numberOfPumps];
@@ -347,7 +347,7 @@ public class MySteamBoilerController implements SteamBoilerController {
       }
 
     }
-    // FIXME: this is where the main implementation stems from
+
     if (this.mode == State.RESCUE) {
       boilerRescueMode(incoming,outgoing);
     } else if (this.mode == State.DEGRADED) {
@@ -361,8 +361,6 @@ public class MySteamBoilerController implements SteamBoilerController {
     } else if (this.mode == State.WAITING) {
       boilerWaitingMode(incoming,outgoing);
     }
-    
-    // NOTE: this is an example message send to illustrate the syntax
     
     if (this.mode == State.RESCUE) {
       outgoing.send(this.messModePara.set(MessageKind.MODE_m,Mailbox.Mode.RESCUE));
@@ -392,20 +390,24 @@ public class MySteamBoilerController implements SteamBoilerController {
     processIncomingMessages(incoming,outgoing);
     doRepairs(incoming,outgoing);
 
-    if (detectedWaterLevelFailure(outgoing) 
-        && (detectedSteamLevelFailure(outgoing) || detectedPumpFailure(incoming,outgoing))) {
+    //If there is a water level error and either a steam or pump failure then emergency stop
+    if (checkWaterLevelFailure(outgoing) 
+        && (checkSteamLevelDFailure(outgoing) || checkPumpFailure(incoming,outgoing))) {
       this.mode = State.EMERGENCY_STOP;
       return;
     }
     
+    //If the water isn't in the boiler limits then emergency stop
     if (!waterLevelInLimits()) {
       this.mode = State.EMERGENCY_STOP;
       return;
+      
     }
     
-    if (!detectedWaterLevelFailure(outgoing)) {
-      if (detectedSteamLevelFailure(outgoing) 
-          || detectedPumpFailure(incoming,outgoing)) {
+    //Once the water level has been fixed move to degrade if other issues or normal
+    if (!checkWaterLevelFailure(outgoing)) {
+      if (checkSteamLevelDFailure(outgoing) 
+          || checkPumpFailure(incoming,outgoing)) {
         this.mode = State.DEGRADED;
       } else {
         this.mode = State.NORMAL;
@@ -443,8 +445,10 @@ public class MySteamBoilerController implements SteamBoilerController {
     processIncomingMessages(incoming,outgoing);
     doRepairs(incoming,outgoing);
     
-    if (detectedWaterLevelFailure(outgoing)) {
-      if (detectedSteamLevelFailure(outgoing)) {
+    //If there is a water and steam level failure emergency stop 
+    //but if only water failure then move to rescue
+    if (checkWaterLevelFailure(outgoing)) {
+      if (checkSteamLevelDFailure(outgoing)) {
         this.mode = State.EMERGENCY_STOP;
         return;
       }
@@ -457,7 +461,8 @@ public class MySteamBoilerController implements SteamBoilerController {
       return;
     }
     
-    if (!detectedSteamLevelFailure(outgoing) && !detectedPumpFailure(incoming,outgoing) 
+    //If everything has been fixed then move to normal
+    if (!checkSteamLevelDFailure(outgoing) && !checkPumpFailure(incoming,outgoing) 
         && !detectedControllerFailure(incoming,outgoing)) {
       this.mode = State.NORMAL;
       return;
@@ -499,28 +504,31 @@ public class MySteamBoilerController implements SteamBoilerController {
   private void doRepairs(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     
-    if (this.waterLevelDeviceFailure && this.waterLevelDeviceNeedingRepair) {
+    //Check if the water level has to be repaired
+    if (this.waterLevelFailure && this.waterLevelNeedingRepair) {
       if (extractOnlyMatch(MessageKind.LEVEL_REPAIRED, incoming) != null) {
-        this.waterLevelDeviceNeedingRepair = false;
-        this.waterLevelDeviceFailure = false;
+        this.waterLevelNeedingRepair = false;
+        this.waterLevelFailure = false;
         outgoing.send(this.messNoPara.set(MessageKind.LEVEL_REPAIRED_ACKNOWLEDGEMENT));
       }
     }
     
-    if (this.steamLevelDeviceFailure && this.steamLevelDeviceNeedingRepair) {
+    //Check if the steam level has to be repaired
+    if (this.steamLevelFailure && this.steamLevelNeedingRepair) {
       if (extractOnlyMatch(MessageKind.STEAM_REPAIRED, incoming) != null) {
-        this.steamLevelDeviceNeedingRepair = false;
-        this.steamLevelDeviceFailure = false;
+        this.steamLevelNeedingRepair = false;
+        this.steamLevelFailure = false;
         outgoing.send(this.messNoPara.set(MessageKind.STEAM_REPAIRED_ACKNOWLEDGEMENT));
       }
     }
     
+    //Check if any of the pumps have to be repaired
     if (countTrueValues(this.workingPumps) < this.numberOfPumps 
-        && countTrueValues(this.pumpsNeedingRepair) > 0) {
+        && countTrueValues(this.pumpsToRepair) > 0) {
       Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_REPAIRED_n,incoming);
       
       for (int i = 0; i < pumpMessages.length; i++) {
-        this.pumpsNeedingRepair[pumpMessages[i].getIntegerParameter()] = false;
+        this.pumpsToRepair[pumpMessages[i].getIntegerParameter()] = false;
         this.workingPumps[pumpMessages[i].getIntegerParameter()] = true;
         outgoing.send(this.messIntPara.set(
             MessageKind.PUMP_REPAIRED_ACKNOWLEDGEMENT_n,pumpMessages[i].getIntegerParameter()));
@@ -528,13 +536,14 @@ public class MySteamBoilerController implements SteamBoilerController {
       }
     }
     
+    //Check if any of the controllers have to be repaired
     if (countTrueValues(this.workingPumpControllers) < this.numberOfPumps 
-        && countTrueValues(this.pumpControllersNeedingRepair) > 0) {
+        && countTrueValues(this.pumpControllersToRepair) > 0) {
       Message[] pumpControllersMessages = 
           extractAllMatches(MessageKind.PUMP_CONTROL_REPAIRED_n,incoming);
       
       for (int i = 0; i < pumpControllersMessages.length; i++) {
-        this.pumpControllersNeedingRepair
+        this.pumpControllersToRepair
         [pumpControllersMessages[i].getIntegerParameter()] = false;
         this.workingPumpControllers
         [pumpControllersMessages[i].getIntegerParameter()] = true;
@@ -553,58 +562,57 @@ public class MySteamBoilerController implements SteamBoilerController {
    */
   private void processIncomingMessages(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
-    
-    if (this.waterLevelDeviceFailure && this.waterLevelDeviceNeedingAck) {
+    //Check if the water level has failed
+    if (this.waterLevelFailure && this.waterLevelDeviceToAcknowledge) {
       if (extractOnlyMatch(MessageKind.LEVEL_FAILURE_ACKNOWLEDGEMENT,incoming) != null) {
-        this.waterLevelDeviceNeedingAck = false;
-        this.waterLevelDeviceNeedingRepair = true;
+        this.waterLevelDeviceToAcknowledge = false;
+        this.waterLevelNeedingRepair = true;
       } else {
         outgoing.send(this.messNoPara.set(MessageKind.LEVEL_FAILURE_DETECTION));
       }
     }
-    
-    if (this.steamLevelDeviceFailure && this.steamLevelDeviceNeedingAck) {
+    //Check if the steam level has failed
+    if (this.steamLevelFailure && this.steamLevelDeviceToAcknowedge) {
       if (extractOnlyMatch(MessageKind.STEAM_OUTCOME_FAILURE_ACKNOWLEDGEMENT,incoming) != null) {
-        this.steamLevelDeviceNeedingAck = false;
-        this.steamLevelDeviceNeedingRepair = true;
+        this.steamLevelDeviceToAcknowedge = false;
+        this.steamLevelNeedingRepair = true;
       } else {
         outgoing.send(this.messNoPara.set(MessageKind.STEAM_FAILURE_DETECTION));
       }
     }
-    
-    //If there is at least one pump that has failed
+    //Check if there is at least one pump that has failed
     if (countTrueValues(this.workingPumps) < this.numberOfPumps) {
       Message[] pumpMessages = 
           extractAllMatches(MessageKind.PUMP_FAILURE_ACKNOWLEDGEMENT_n,incoming);
       if (pumpMessages.length > 0) {
         for (int i = 0; i < pumpMessages.length; i++) {
-          this.pumpsNeedingAck[pumpMessages[i].getIntegerParameter()] = false;
-          this.pumpsNeedingRepair[pumpMessages[i].getIntegerParameter()] = true;
+          this.pumpsToAcknowledge[pumpMessages[i].getIntegerParameter()] = false;
+          this.pumpsToRepair[pumpMessages[i].getIntegerParameter()] = true;
         }
       } else {
         for (int i = 0; i < this.numberOfPumps; i++) {
           if (!this.workingPumps[i] 
-              && this.pumpsNeedingAck[i]) {
+              && this.pumpsToAcknowledge[i]) {
             outgoing.send(this.messIntPara.set(MessageKind.PUMP_FAILURE_DETECTION_n,i));
           }
         }
       }
     }
-    
+    //Check if there is at least one controller that has failed. 
     if (countTrueValues(this.workingPumpControllers) < this.numberOfPumps) {
       Message[] pumpControllerMessages = 
           extractAllMatches(MessageKind.PUMP_CONTROL_FAILURE_ACKNOWLEDGEMENT_n,incoming);
       if (pumpControllerMessages.length > 0) {
         for (int i = 0; i < pumpControllerMessages.length; i++) {
-          this.pumpControllersNeedingAck
+          this.pumpControllersToAcknowledge
           [pumpControllerMessages[i].getIntegerParameter()] = false;
-          this.pumpControllersNeedingRepair
+          this.pumpControllersToRepair
           [pumpControllerMessages[i].getIntegerParameter()] = true;
         }
       } else {
         for (int i = 0; i < this.numberOfPumps; i++) {
           if (!this.workingPumpControllers[i] 
-              && this.pumpControllersNeedingAck[i]) {
+              && this.pumpControllersToAcknowledge[i]) {
             outgoing.send(this.messIntPara.set(MessageKind.PUMP_CONTROL_FAILURE_DETECTION_n,i));
           }
         }
@@ -673,18 +681,23 @@ public class MySteamBoilerController implements SteamBoilerController {
     assert incoming != null && outgoing != null;
     assert this.mode == State.NORMAL;
     
-    if (!detectedWaterLevelFailure(outgoing) && !waterLevelInLimits()) {
+    //If the water is outside the limits but there is no level failure then emergency stop
+    if (!checkWaterLevelFailure(outgoing) && !waterLevelInLimits()) {
       this.mode = State.EMERGENCY_STOP;
       return;
-    } else if (detectedWaterLevelFailure(outgoing) && detectedSteamLevelFailure(outgoing)) {
+    } 
+    
+    //If the water and stem levels have failed then emergency stop
+    if (checkWaterLevelFailure(outgoing) && checkSteamLevelDFailure(outgoing)) {
       this.mode = State.EMERGENCY_STOP;
       return;
     }
     
-    if (detectedWaterLevelFailure(outgoing)) {
+    //If the water has failed then move to rescue. For any other failures move to degraded.
+    if (checkWaterLevelFailure(outgoing)) {
       this.mode = State.RESCUE;
-    } else if (detectedSteamLevelFailure(outgoing) || detectedControllerFailure(incoming,outgoing) 
-        || detectedPumpFailure(incoming, outgoing)) {
+    } else if (checkSteamLevelDFailure(outgoing) || detectedControllerFailure(incoming,outgoing) 
+        || checkPumpFailure(incoming, outgoing)) {
       this.mode = State.DEGRADED;
       return;
     }
@@ -698,10 +711,11 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param outgoing = outgoing messages.
    * @return = if there if a pump failure. 
    */
-  private boolean detectedPumpFailure(Mailbox incoming, Mailbox outgoing) {
+  private boolean checkPumpFailure(Mailbox incoming, Mailbox outgoing) {
     assert incoming != null && outgoing != null;
     Message[] pumpMessages = extractAllMatches(MessageKind.PUMP_STATE_n_b, incoming);
 
+    //For each of the pumps, check that the pumps that are open should be open
     for (int i = 0; i < this.numberOfPumps; i++) {
       if (this.workingPumps[i]) {
         if (this.openPumps[i] != pumpMessages[i].getBooleanParameter()) {
@@ -711,15 +725,15 @@ public class MySteamBoilerController implements SteamBoilerController {
             this.openPumps[i] = true;
           }
           this.workingPumps[i] = false;
-          this.pumpsNeedingAck[i] = true;
+          this.pumpsToAcknowledge[i] = true;
           outgoing.send(this.messIntPara.set(MessageKind.PUMP_FAILURE_DETECTION_n,i));
           return true;
         }
       }
       
-      if (countTrueValues(this.pumpsNeedingAck) > 0) {
+      if (countTrueValues(this.pumpsToAcknowledge) > 0) {
         return true;
-      } else if (countTrueValues(this.pumpsNeedingRepair) > 0) {
+      } else if (countTrueValues(this.pumpsToRepair) > 0) {
         return true;
       }
     }
@@ -738,20 +752,21 @@ public class MySteamBoilerController implements SteamBoilerController {
     Message[] pumpControllerMessages = 
         extractAllMatches(MessageKind.PUMP_CONTROL_STATE_n_b, incoming);
     
+    //Check that the controllers and the pumps are in agreement
     for (int i = 0; i < this.numberOfPumps; i++) {
       if (this.openPumps[i] == pumpMessages[i].getBooleanParameter()) {
         if (this.openPumps[i] 
             != pumpControllerMessages[i].getBooleanParameter()) {
           this.workingPumpControllers[i] = false;
-          this.pumpControllersNeedingAck[i] = true;
+          this.pumpControllersToAcknowledge[i] = true;
           outgoing.send(this.messIntPara.set(MessageKind.PUMP_CONTROL_FAILURE_DETECTION_n,i));
           return true;
         }
       }
       
-      if (countTrueValues(this.pumpControllersNeedingAck) > 0) {
+      if (countTrueValues(this.pumpControllersToAcknowledge) > 0) {
         return true;
-      } else if (countTrueValues(this.pumpControllersNeedingRepair) > 0) {
+      } else if (countTrueValues(this.pumpControllersToRepair) > 0) {
         return true;
       }
     }
@@ -763,12 +778,12 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param outgoing = outgoing messages. 
    * @return = if there if a steam level failure
    */
-  private boolean detectedSteamLevelFailure(Mailbox outgoing) {
+  private boolean checkSteamLevelDFailure(Mailbox outgoing) {
     assert outgoing != null;
     if (this.steamLevel > this.maxSteamLevel || this.steamLevel < 0) {
       outgoing.send(this.messNoPara.set(MessageKind.STEAM_FAILURE_DETECTION));
-      this.steamLevelDeviceFailure = true;
-      this.steamLevelDeviceNeedingAck = true;
+      this.steamLevelFailure = true;
+      this.steamLevelDeviceToAcknowedge = true;
       return true;
     }
     return false;
@@ -790,12 +805,12 @@ public class MySteamBoilerController implements SteamBoilerController {
    * @param outgoing = outgoing messages.
    * @return = if there is a water level failure. 
    */
-  private boolean detectedWaterLevelFailure(Mailbox outgoing) {
+  private boolean checkWaterLevelFailure(Mailbox outgoing) {
     assert outgoing != null;
     if (this.waterLevel < 0 || this.waterLevel >= this.waterCapacity) {
       outgoing.send(this.messNoPara.set(MessageKind.LEVEL_FAILURE_DETECTION));
-      this.waterLevelDeviceFailure = true;
-      this.waterLevelDeviceNeedingAck = true;
+      this.waterLevelFailure = true;
+      this.waterLevelDeviceToAcknowledge = true;
       return true;
     }
     return false;
@@ -813,9 +828,9 @@ public class MySteamBoilerController implements SteamBoilerController {
     if (extractOnlyMatch(MessageKind.STEAM_BOILER_WAITING,incoming) == null) {
       return;
     }
-    
+    //If the water or steam isn't at the right level then emergency stop
     if (this.waterLevel < 0 || this.waterLevel > this.waterCapacity 
-        || this.steamLevel != 0 || detectedWaterLevelFailure(outgoing)) {
+        || this.steamLevel != 0 || checkWaterLevelFailure(outgoing)) {
       this.mode = State.EMERGENCY_STOP;
       return;
     }
